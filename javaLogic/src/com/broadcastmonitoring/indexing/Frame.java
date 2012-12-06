@@ -9,10 +9,14 @@ public class Frame
 {
 	private final byte[] buffer;
 	private final int redundantThreshold;
-	public Frame(byte[] buffer, int redundantThreshold)
+	private final int startFreq;
+	private final int realTime;
+	public Frame(byte[] buffer, int redundantThreshold,int startFreq, int realTime)
 	{
 		this.buffer=buffer;
 		this.redundantThreshold=redundantThreshold;
+		this.startFreq=startFreq;
+		this.realTime=realTime;
 	}
 	
 	private Complex[] getComplex()
@@ -27,17 +31,40 @@ public class Frame
 	
 	private double[] convertComplexToDouble(Complex[] input)
 	{
-		double[] result=new double[input.length/redundantThreshold];
-		for (int i = 0; i < result.length; i++) 
+		double[] result=null;
+		if(input.length%redundantThreshold==0)
 		{
-			result[i]=input[i].abs();
+			result=new double[(input.length/redundantThreshold)-startFreq];
+			
+			for (int i = 0; i < result.length; i++) 
+			{
+				if((i+startFreq)<input.length)
+				{
+					result[i]=input[i+startFreq].abs();
+				}
+				else
+				{
+					System.err.println("****Trying to access a frequency that is greater that what has been sampled****\n# Frame.java #");
+				}
+				
+			}
 		}
+		else
+		{
+			System.err.println("****The number of sampled frequencies appears to be not divisible by the redundantThreshold****\n# Frame.java #");
+		}
+		
 		return result;
+	}
+	
+	public int getRealTime()
+	{
+		return realTime;
 	}
 	
 	public int getNumberOfFreq()
 	{
-		return buffer.length/redundantThreshold;
+		return (buffer.length/redundantThreshold)-startFreq;
 	}
 	
 	public double[] getFreqMagnitudes()

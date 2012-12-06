@@ -17,17 +17,29 @@ public class Streamer
 	protected final int startFreq;
 	protected final float sampleRate;
 	protected final int hashmapSize;
+	protected final int lastTimeValue;
+	protected final int targetZoneSize;
+	protected final int anchor2peakMaxFreqDiff;
 
-	public Streamer(float sampleRate, int frameSize, int hashmapSize, int redundantThreshold, int startFreq) throws LineUnavailableException
+	public Streamer(float sampleRate, int frameSize, int hashmapSize, int redundantThreshold, int startFreq, int targetZoneSize, int anchor2peakMaxFreqDiff) throws LineUnavailableException
 	{
 		this.sampleRate=sampleRate;
 		this.frameSize=frameSize;
 		this.redundantThreshold=redundantThreshold;
 		this.startFreq=startFreq;
 		this.hashmapSize=hashmapSize;
+		this.targetZoneSize=targetZoneSize;
+		this.anchor2peakMaxFreqDiff=anchor2peakMaxFreqDiff;
 		
 		DataLine.Info info=new DataLine.Info(TargetDataLine.class, getFormat());
 		line=(TargetDataLine)AudioSystem.getLine(info);
+		this.lastTimeValue=getLastTimeValue();
+	}
+	
+	private int getLastTimeValue()
+	{
+		//TODO: get last time value from database
+		return 0;
 	}
 	
 	private AudioFormat getFormat()
@@ -66,15 +78,17 @@ public class Streamer
 			byte[] buffer=new byte[frameSize];
 			Frame[] frameBuffer=new Frame[hashmapSize];
 			int frameCount=1;
+			int timeCounter=lastTimeValue;
 			while(true)
 			{
 				int count=line.read(buffer, 0, buffer.length);
 				if(count>0 && frameCount<=frameBuffer.length)
 				{
-					frameBuffer[frameCount-1]=new Frame(buffer);
+					timeCounter++;
+					frameBuffer[frameCount-1]=new Frame(buffer,redundantThreshold,startFreq,timeCounter);
 					if(frameCount==hashmapSize)
 					{
-						HashMap hashMap=new HashMap(frameBuffer);
+						HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff);
 						//TODO: visualize frames
 						//TODO: generate hashes
 						frameCount=1;
@@ -89,11 +103,11 @@ public class Streamer
 				{
 					if(count<=0)
 					{
-						System.err.println("****The targetDataLine is not streaming any data****");
+						System.err.println("****The targetDataLine is not streaming any data****\n# Streamer.java #");
 					}
 					if(frameCount>frameBuffer.length)
 					{
-						System.err.println("****The number of frames has just exceeded what the frameBuffer can handle****");
+						System.err.println("****The number of frames has just exceeded what the frameBuffer can handle****\n# Streamer.java #");
 					}
 				}
 			}
