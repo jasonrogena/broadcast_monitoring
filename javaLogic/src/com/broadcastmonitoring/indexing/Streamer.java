@@ -1,6 +1,7 @@
 package com.broadcastmonitoring.indexing;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 
 import javax.sound.sampled.AudioFormat;
@@ -84,20 +85,47 @@ public class Streamer
 				int count=line.read(buffer, 0, buffer.length);
 				if(count>0 && frameCount<=frameBuffer.length)
 				{
-					timeCounter++;
-					frameBuffer[frameCount-1]=new Frame(buffer,redundantThreshold,startFreq,timeCounter);
-					if(frameCount==hashmapSize)
+					try 
 					{
-						HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff);
-						//TODO: visualize frames
-						//TODO: generate hashes
-						frameCount=1;
-						frameBuffer=new Frame[hashmapSize];
-					}
-					else
+						out.write(buffer,0,count);
+						timeCounter++;
+						for(int i=0;i<buffer.length;i++)
+						{
+							System.out.print(" "+buffer[i]+" ");
+						}
+						System.out.print("\n");
+						frameBuffer[frameCount-1]=new Frame(buffer,redundantThreshold,startFreq,timeCounter);
+						if(frameCount==hashmapSize)
+						{
+							HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff);
+							//TODO: visualize frames
+							hashMap.generateHashes();
+							frameCount=1;
+							frameBuffer=new Frame[hashmapSize];
+						}
+						else
+						{
+							frameCount++;
+						}
+					} 
+					catch (IOException e)
 					{
-						frameCount++;
+						System.err.println("****unable to write to output stream****");
+						e.printStackTrace();
 					}
+					finally
+					{
+						try 
+						{
+							out.close();
+						} 
+						catch (Exception e) 
+						{
+							System.err.println("****unable to close output stream****");
+							e.printStackTrace();
+						}
+					}
+					
 				}
 				else
 				{
