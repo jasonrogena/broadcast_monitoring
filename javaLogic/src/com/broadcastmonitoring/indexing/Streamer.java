@@ -3,6 +3,10 @@ package com.broadcastmonitoring.indexing;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.TimeZone;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -77,6 +81,9 @@ public class Streamer
 		{
 			OutputStream out=new ByteArrayOutputStream();
 			byte[] buffer=new byte[frameSize];
+			
+			//byte[] previous=null;
+			
 			Frame[] frameBuffer=new Frame[hashmapSize];
 			int frameCount=1;
 			int timeCounter=lastTimeValue;
@@ -89,19 +96,36 @@ public class Streamer
 					{
 						out.write(buffer,0,count);
 						timeCounter++;
-						for(int i=0;i<buffer.length;i++)
+						/*for(int i=0;i<buffer.length;i++)
 						{
 							System.out.print(" "+buffer[i]+" ");
 						}
-						System.out.print("\n");
-						frameBuffer[frameCount-1]=new Frame(buffer,redundantThreshold,startFreq,timeCounter);
+						System.out.print("\n");*/
+						
+						Date date=new Date();
+						SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+						sdf.setTimeZone(TimeZone.getTimeZone("gmt"));
+						String timestamp=sdf.format(date);
+						
+						/*if(previous!=null)
+						{
+							if(Arrays.equals(previous, buffer)==false)
+							{
+								System.out.println("yes");
+							}
+						}*/
+						//System.out.println(buffer[0]+" "+buffer[buffer.length/2]+" "+buffer[buffer.length-1]);
+						//previous=buffer;
+						
+						frameBuffer[frameCount-1]=new Frame(buffer,redundantThreshold,startFreq,timeCounter, timestamp);
+						//frameBuffer[0].printBuffer();
 						if(frameCount==hashmapSize)
 						{
 							HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff);
 							//TODO: visualize frames
 							hashMap.generateHashes();
 							frameCount=1;
-							frameBuffer=new Frame[hashmapSize];
+							frameBuffer=new Frame[hashmapSize];//make you use the framebuffer you passed in the hashmap before you reinitialize this framebuffer
 						}
 						else
 						{

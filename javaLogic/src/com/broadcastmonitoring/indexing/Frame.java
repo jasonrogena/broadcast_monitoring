@@ -7,25 +7,42 @@ import org.apache.commons.math3.transform.TransformType;
 
 public class Frame
 {
-	private final byte[] buffer;
+	//private final byte[] buffer;
 	private final int redundantThreshold;
 	private final int startFreq;
 	private final int realTime;
-	public Frame(byte[] buffer, int redundantThreshold,int startFreq, int realTime)
+	private final String timestamp;
+	private double[] freqMagnitudes;
+	public Frame(byte[] buffer, int redundantThreshold,int startFreq, int realTime, String timestamp)
 	{
-		this.buffer=buffer;
+		//this.buffer=buffer;
+		//System.out.println(realTime+" >"+buffer[0]+" "+buffer[buffer.length/2]+" "+buffer[buffer.length-1]);
 		this.redundantThreshold=redundantThreshold;
 		this.startFreq=startFreq;
 		this.realTime=realTime;
+		this.timestamp=timestamp;
+		
+		Complex[] result=new Complex[buffer.length];
+		FastFourierTransformer transformer=new FastFourierTransformer(DftNormalization.STANDARD);
+		result=transformer.transform(getComplex(buffer), TransformType.FORWARD);
+		//System.out.println(result[0].getReal()+" "+result[result.length/2].getReal()+" "+result[result.length-1].getReal());
+		freqMagnitudes=convertComplexToDouble(result);
 	}
 	
-	private Complex[] getComplex()
+	public void printFreqMagnitudes()
+	{
+		System.out.println(realTime+" > "+freqMagnitudes[0]+" "+freqMagnitudes[freqMagnitudes.length/2]+" "+freqMagnitudes[freqMagnitudes.length-1]);
+	}
+	
+	private Complex[] getComplex(byte[] buffer)
 	{
 		Complex[] result=new Complex[buffer.length];
 		for(int i=0;i<buffer.length;i++)
 		{
 			result[i]=new Complex(buffer[i], 0);
 		}
+		
+		//System.out.println(result[0].getReal()+" "+result[result.length/2].getReal()+" "+result[result.length-1].getReal());
 		return result;
 	}
 	
@@ -48,6 +65,7 @@ public class Frame
 				}
 				
 			}
+			//System.out.println(result[0]+" "+result[result.length/2]+" "+result[result.length-1]);
 		}
 		else
 		{
@@ -62,16 +80,18 @@ public class Frame
 		return realTime;
 	}
 	
-	public int getNumberOfFreq()
+	public String getTimestamp()
+	{
+		return timestamp;
+	}
+	
+	/*public int getNumberOfFreq()
 	{
 		return (buffer.length/redundantThreshold)-startFreq;
-	}
+	}*/
 	
 	public double[] getFreqMagnitudes()
 	{
-		Complex[] result=new Complex[buffer.length];
-		FastFourierTransformer transformer=new FastFourierTransformer(DftNormalization.STANDARD);
-		result=transformer.transform(getComplex(), TransformType.FORWARD);
-		return convertComplexToDouble(result);
+		return freqMagnitudes;
 	}
 }

@@ -15,9 +15,9 @@ public class PeakProcessor
 		this.anchor2peakMaxFreqDiff=anchor2peakMaxFreqDiff;
 	}
 	
-	public void addPeak(int time, int realTime, int freq)
+	public void addPeak(int time, int realTime, int freq, String timestamp)
 	{
-		peaks.add(new Peak(time, freq, realTime));
+		peaks.add(new Peak(time, freq, realTime, timestamp));
 	}
 	
 	private double getAbsoluteValue(double value)
@@ -28,23 +28,32 @@ public class PeakProcessor
 	public List<Hash> generateHashes()
 	{
 		List<Hash> result=null;
+		System.out.println("*******************************");
 		if(peaks.size()!=0)
 		{
-			for(int anchorPeakIndex=0; anchorPeakIndex<peaks.size();anchorPeakIndex++)
+			System.out.println("number of peaks = "+peaks.size()+" " );
+			//System.out.println("Real time for first peak = "+peaks.get(0).getRealTime());
+			//System.out.println("Real time for last peak = "+peaks.get(peaks.size()-1).getRealTime());
+			for(int anchorPeakIndex=0; anchorPeakIndex<peaks.size(); anchorPeakIndex++)
 			{
-				List<Peak> workingList=peaks;
+				List<Integer> indexesOfAddedPeaks=new ArrayList<Integer>();
+				
 				Peak anchorPeak=peaks.get(anchorPeakIndex);//anchor peak
 				int size=0;
+				
+				//System.out.print("Number of peaks = "+peaks.size());
+				
+				//System.out.print(" target zone size = "+targetZoneSize);
 				while(size<=targetZoneSize)//generate hashes using this anchor peak
 				{
 					int nearestPeakIndex=-1;
 					
 					//find nearest peak
-					for(int i=0;i>workingList.size();i++)
+					for(int i=0;i<peaks.size();i++)
 					{
-						if(workingList.get(i).getTime()>anchorPeak.getTime())
+						if(peaks.get(i).getTime()>anchorPeak.getTime() && indexesOfAddedPeaks.contains(i)==false)//changed since it appears that most frames are duplicates
 						{
-							double freqDifference=workingList.get(i).getFrequency()-anchorPeak.getFrequency();
+							double freqDifference=peaks.get(i).getFrequency()-anchorPeak.getFrequency();
 							double absoluteFreqDifference=getAbsoluteValue(freqDifference);
 							if(absoluteFreqDifference<=(double)anchor2peakMaxFreqDiff)
 							{
@@ -54,16 +63,17 @@ public class PeakProcessor
 								}
 								else
 								{
-									double a2nTimeDifference=workingList.get(nearestPeakIndex).getTime()-anchorPeak.getTime();
-									double a2nFreqDifference=workingList.get(nearestPeakIndex).getFrequency()-anchorPeak.getFrequency();
+									double a2nTimeDifference=peaks.get(nearestPeakIndex).getTime()-anchorPeak.getTime();
+									double a2nFreqDifference=peaks.get(nearestPeakIndex).getFrequency()-anchorPeak.getFrequency();
 									double a2nDistance=Math.sqrt((a2nTimeDifference*a2nTimeDifference)+(a2nFreqDifference*a2nFreqDifference));
 									
-									double a2cTimeDifference=workingList.get(i).getTime()-anchorPeak.getTime();
-									double a2cFreqDifference=workingList.get(i).getFrequency()-anchorPeak.getFrequency();
+									double a2cTimeDifference=peaks.get(i).getTime()-anchorPeak.getTime();
+									double a2cFreqDifference=peaks.get(i).getFrequency()-anchorPeak.getFrequency();
 									double a2cDistance=Math.sqrt((a2cTimeDifference*a2cTimeDifference)+(a2cFreqDifference*a2cFreqDifference));
 									
 									if(a2cDistance<a2nDistance)//distance from anchor to current is less than distance from anchor to nearest
 									{
+										//System.out.print(" nearest peak found ");
 										nearestPeakIndex=i;
 									}
 								}
@@ -83,19 +93,25 @@ public class PeakProcessor
 						{
 							result=new ArrayList<Hash>();
 						}
-						int timeDifference=workingList.get(nearestPeakIndex).getTime()-anchorPeak.getTime();
-						result.add(new Hash(anchorPeak.getFrequency(), workingList.get(nearestPeakIndex).getFrequency(), timeDifference, anchorPeak.getRealTime()));
+						int timeDifference=peaks.get(nearestPeakIndex).getTime()-anchorPeak.getTime();
+						result.add(new Hash(anchorPeak.getFrequency(), peaks.get(nearestPeakIndex).getFrequency(), timeDifference, anchorPeak.getRealTime(), anchorPeak.getTimestamp()));
+						
+						//remove nearest peak from working list
+						//workingList.remove(nearestPeakIndex);
+						indexesOfAddedPeaks.add(nearestPeakIndex);
 					}
-					
-					//remove nearest peak from working list
-					workingList.remove(nearestPeakIndex);
-					
 				}
 			}
 		}
 		else
 		{
 			System.err.println("****No peaks were there to process****\n# PeakProcessor.java #");
+		}
+		
+		if(result!=null)
+		{
+			//System.out.println("real time for first hash = "+result.get(0).getRealTime());
+			//System.out.println("real time for last hash = "+result.get(result.size()-1).getRealTime());
 		}
 		
 		return result;

@@ -1,5 +1,14 @@
 package com.broadcastmonitoring.indexing;
 
+import com.broadcastmonitoring.database.Database;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 
 public class HashMap
@@ -10,6 +19,8 @@ public class HashMap
 
 	public HashMap(Frame[] frames, int targetZoneSize, int anchor2peakMaxFreqDiff)
 	{
+		//frames[0].printBuffer();
+		//frames[9].printBuffer();
 		this.frames=frames;
 		this.targetZoneSize=targetZoneSize;
 		this.anchor2peakMaxFreqDiff=anchor2peakMaxFreqDiff;
@@ -37,18 +48,34 @@ public class HashMap
 	
 	private PeakProcessor generateConstelationMap(double[][] freqMagnitudes)
 	{
-		
+		//System.out.println("generateConstelationMap called");
 		//generateFreqMagnitudes();
 		PeakProcessor peakProcessor=null;
+		
+		/*//Debug
+		for (int i = 0; i < freqMagnitudes.length; i++)
+		{
+			for (int j = 0; j < freqMagnitudes[i].length; j++) 
+			{
+				System.out.print(" "+freqMagnitudes[i][j]+" ");
+				if(j==freqMagnitudes[i].length-1)
+				{
+					System.out.print("\n");
+				}
+			}
+		}
+		//Debug*/
 		
 		int[][] result=null;
 		//for each of the magnitudes in freqMagnitudes check if is a peak
 		if(freqMagnitudes.length>0 && freqMagnitudes[0].length>0)
 		{
+			//System.out.println("processing");
 			result=new int[freqMagnitudes.length][];
 			for (int i = 0; i < freqMagnitudes.length; i++) 
 			{
 				result[i]=new int[freqMagnitudes[i].length];
+				
 				for (int j = 0; j < freqMagnitudes[i].length; j++)
 				{
 					int pass=0;
@@ -99,12 +126,13 @@ public class HashMap
 					
 					if(pass==4)//passed all 4 tests
 					{
+						//System.out.print(" found ");
 						result[i][j]=1;
 						if(peakProcessor==null)
 						{
 							peakProcessor=new PeakProcessor(targetZoneSize,anchor2peakMaxFreqDiff);
 						}
-						peakProcessor.addPeak(i, frames[i].getRealTime(), j);
+						peakProcessor.addPeak(i, frames[i].getRealTime(), j, frames[i].getTimestamp());
 					}
 					else
 					{
@@ -124,6 +152,20 @@ public class HashMap
 				System.err.println("****Frames in hashMap have 0 frequency magnitudes****\n# HashMap.java #");
 			}
 		}
+		
+		/*for (int k = 0; k < result.length; k++)
+		{
+			for (int k2 = 0; k2 < result[k].length; k2++)
+			{
+				System.out.print(" "+result[k][k2]+" ");
+				if (k2==result[k].length-1)
+				{
+					System.out.print("\n");
+				}
+			}
+			
+		}*/
+		
 		return peakProcessor;
 		
 	}
@@ -151,6 +193,72 @@ public class HashMap
 				else
 				{
 					System.out.println("number of hashes = "+hashes.size());
+					
+					Database database=new Database("broadcast_monitoring", "root", "jason");
+					
+					String fileName=String.valueOf(hashes.get(0).getRealTime())+"_"+hashes.get(0).getTimestamp()+"_"+hashes.get(hashes.size()-1).getTimestamp()+".ser";
+					File file=new File(fileName);
+					if(file.exists()==false)
+					{
+						FileOutputStream fileOutputStream=null;
+						ObjectOutputStream objectOutputStream=null;
+						try 
+						{
+							file.createNewFile();
+							fileOutputStream=new FileOutputStream(file);
+							objectOutputStream=new ObjectOutputStream(fileOutputStream);
+							objectOutputStream.writeObject(hashes);
+							
+							database.initInsertStatement("INSERT INTO `broadcast_monitoring`.`hash_set`(`start_timestamp`,`stop_timestamp`,url,parent) VALUES (?,?,?,?)");
+							database.addColumnValue(hashes.get(0).getTimestamp());
+							database.addColumnValue(hashes.get(hashes.size()-1).getTimestamp());
+							database.addColumnValue(fileName);
+							database.addColumnValue(1);
+							
+							database.executeInsert();
+						} 
+						catch (FileNotFoundException e)
+						{
+							e.printStackTrace();
+						}
+						catch (IOException e1)
+						{
+							e1.printStackTrace();
+						}
+						finally
+						{
+							if(objectOutputStream!=null)
+							{
+								try 
+								{
+									objectOutputStream.close();
+								} 
+								catch (IOException e) 
+								{
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+							if(fileOutputStream!=null)
+							{
+								try 
+								{
+									fileOutputStream.close();
+								} 
+								catch (IOException e) 
+								{
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+						}
+					}
+					else
+					{
+						System.err.println("****File already exists****\n# HashMap.java #");
+					}
+					database.close();
+					
 				}
 			}
 		}
