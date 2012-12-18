@@ -197,7 +197,24 @@ public class HashMap
 					Database database=new Database("broadcast_monitoring", "root", "jason");
 					
 					String fileName=String.valueOf(hashes.get(0).getRealTime())+"_"+hashes.get(0).getTimestamp()+"_"+hashes.get(hashes.size()-1).getTimestamp()+".ser";
-					File file=new File(fileName);
+					String dir="../bin/hashes";
+					
+					//check and create dir
+					File directory=new File(dir);
+					if(!directory.exists())
+					{
+						System.err.println("****"+dir+" does not exist. Trying to create dir ****\n# HashMap.java #");
+						if(directory.mkdirs())
+						{
+							System.out.println("*****"+dir+" created****\n# HashMap.java #");
+						}
+						else
+						{
+							System.err.println("**** Unable to create "+dir+" ****\n# HashMap.java #");
+						}
+					}
+					
+					File file=new File(dir,fileName);
 					if(file.exists()==false)
 					{
 						FileOutputStream fileOutputStream=null;
