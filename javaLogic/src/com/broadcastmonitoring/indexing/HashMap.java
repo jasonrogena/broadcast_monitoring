@@ -7,8 +7,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 
 public class HashMap
@@ -226,11 +224,12 @@ public class HashMap
 							objectOutputStream=new ObjectOutputStream(fileOutputStream);
 							objectOutputStream.writeObject(hashes);
 							
-							database.initInsertStatement("INSERT INTO `broadcast_monitoring`.`hash_set`(`start_timestamp`,`stop_timestamp`,url,parent) VALUES (?,?,?,?)");
+							database.initInsertStatement("INSERT INTO `broadcast_monitoring`.`hash_set`(`start_timestamp`,`stop_timestamp`,url,parent,`start_real_time`) VALUES (?,?,?,?,?)");
 							database.addColumnValue(hashes.get(0).getTimestamp());
 							database.addColumnValue(hashes.get(hashes.size()-1).getTimestamp());
 							database.addColumnValue(fileName);
 							database.addColumnValue(1);
+							database.addColumnValue(hashes.get(0).getRealTime());
 							
 							database.executeInsert();
 						} 

@@ -3,9 +3,8 @@ package com.broadcastmonitoring.database;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-
-import javax.naming.spi.DirStateFactory.Result;
 
 public class Database 
 {
@@ -111,6 +110,26 @@ public class Database
 		}
 	}
 	
+	public void addColumnValue(double value)
+	{
+		if(preparedStatement!=null)
+		{
+			try 
+			{
+				preparedStatement.setDouble(insertColumnCount, value);
+				insertColumnCount++;
+			} 
+			catch (SQLException e) 
+			{
+				e.printStackTrace();
+			}
+		}
+		else
+		{
+			System.err.println("****Unable to add column value to statement because preparedStatement is null****\n# Database.java #");
+		}
+	}
+	
 	public boolean executeInsert()
 	{
 		boolean result=false;
@@ -131,6 +150,23 @@ public class Database
 			System.err.println("****Could not execute insert because preparedStatement is null****\n# Database.java #");
 		}
 		return result;
+	}
+	
+	public ResultSet runSelectQuery(String query)
+	{
+		if(connection!=null)
+		{
+			try 
+			{
+				preparedStatement=connection.prepareStatement(query);
+				return preparedStatement.executeQuery();
+			} 
+			catch (SQLException e) 
+			{
+				e.printStackTrace();
+			}
+		}
+		return null;
 	}
 	
 	public void close()
