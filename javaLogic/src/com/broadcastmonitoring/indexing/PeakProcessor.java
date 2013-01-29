@@ -54,7 +54,7 @@ public class PeakProcessor
 						if(peaks.get(i).getTime()>anchorPeak.getTime() && indexesOfAddedPeaks.contains(i)==false)//changed since it appears that most frames are duplicates
 						{
 							double freqDifference=peaks.get(i).getFrequency()-anchorPeak.getFrequency();
-							double absoluteFreqDifference=getAbsoluteValue(freqDifference);
+							double absoluteFreqDifference=Math.abs(freqDifference);
 							if(absoluteFreqDifference<=(double)anchor2peakMaxFreqDiff)
 							{
 								if(nearestPeakIndex==-1)

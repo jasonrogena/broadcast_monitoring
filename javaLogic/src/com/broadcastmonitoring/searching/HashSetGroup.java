@@ -18,6 +18,7 @@ public class HashSetGroup
 	final String hashSetDir;
 	List<Double> bin;
 	List<Integer> binFrequencies;
+	List<List<Hash>> advertHashSetPieces; //TODO: not sure this will work
 	
 	public HashSetGroup(List<String> hashSetUrls, List<Hash> advertHashes, String dir)
 	{
@@ -27,16 +28,18 @@ public class HashSetGroup
 		this.hashSetDir=dir;
 		bin=new ArrayList<Double>();
 		binFrequencies=new ArrayList<Integer>();
+		advertHashSetPieces=new ArrayList<List<Hash>>();
 	}
 	
 	public void process()
 	{
-		System.out.println("Deserializing hashes");
+		System.out.println("--------------------------------------------------");
+		System.out.println("Deserializing group hashes");
 		deserializeHashSets();
-		System.out.println("Matching hashes");
-		matchHashes();
-		System.out.println("Processing bin frequencies");
-		processBinFrequencies();
+		System.out.println("chopping advert hashSet");
+		chopAdvertHashSet();
+		System.out.println("Processing advert pieces");
+		processAdvertHashPieces();
 	}
 	
 	public void showHashSetUrls()
@@ -75,6 +78,116 @@ public class HashSetGroup
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		}
+	}
+	
+	private void chopAdvertHashSet()
+	{
+		int startPoint=0;
+		int stopPoint=groupHashes.size()-1;
+		int flag=0;
+		int displacement=groupHashes.size()/2;
+		while(flag==0)
+		{
+			if(stopPoint<advertHashes.size())
+			{
+				List<Hash> piece=advertHashes.subList(startPoint, stopPoint);
+				advertHashSetPieces.add(piece);
+				startPoint=startPoint+displacement;
+				if(stopPoint==(advertHashes.size()-1))
+				{
+					flag=1;
+				}
+				else
+				{
+					if((stopPoint+displacement)<advertHashes.size())
+					{
+						stopPoint=stopPoint+displacement;
+					}
+					else
+					{
+						stopPoint=advertHashes.size()-1;
+					}
+				}
+			}
+			else
+			{
+				flag=1;
+				System.err.println("****It appears the advert is smaller than the hashSetGroup****\n# HashSetGroup.java #");
+			}
+		}
+	}
+
+	private void processAdvertHashPieces()
+	{
+		for (int i = 0; i < advertHashSetPieces.size(); i++)
+		{
+			List<Hash> currentPiece=advertHashSetPieces.get(i);
+			List<Double> pieceBin=new ArrayList<Double>();;
+			List<Integer> pieceBinFrequencies=new ArrayList<Integer>();;
+			System.out.println("----New Piece being processed----");
+			
+			//compare current piece with grouphashes
+			System.out.println("comparing hashes from piece to hashes from hashsetgroup");
+			for (int groupPointer = 0; groupPointer < groupHashes.size(); groupPointer++) 
+			{
+				if(groupPointer%1000==0)
+				{
+					System.out.print("*");
+				}
+				for (int piecePointer = 0; piecePointer < currentPiece.size(); piecePointer++) 
+				{
+					/*int f1Diff=Math.abs(groupHashes.get(groupPointer).getF1()-currentPiece.get(piecePointer).getF1());
+					int f2Diff=Math.abs(groupHashes.get(groupPointer).getF2()-currentPiece.get(piecePointer).getF2());
+					int groupFreqDiff=groupHashes.get(groupPointer).getF1()-groupHashes.get(groupPointer).getF2();
+					int advertFreqDiff=currentPiece.get(piecePointer).getF1()-currentPiece.get(piecePointer).getF2();*/
+					if(groupHashes.get(groupPointer).getF1()==currentPiece.get(piecePointer).getF1() && groupHashes.get(groupPointer).getF2()==currentPiece.get(piecePointer).getF2() && groupHashes.get(groupPointer).getTimeDifference()==currentPiece.get(piecePointer).getTimeDifference())
+					//if(groupFreqDiff==advertFreqDiff && groupHashes.get(groupPointer).getTimeDifference()==currentPiece.get(piecePointer).getTimeDifference())
+					{
+						double timeDifference=groupHashes.get(groupPointer).getRealTime()-currentPiece.get(piecePointer).getRealTime();
+						if(pieceBin.contains(timeDifference))
+						{
+							pieceBinFrequencies.set(pieceBin.indexOf(timeDifference), pieceBinFrequencies.get(pieceBin.indexOf(timeDifference))+1);
+							//the assumption here is that the frequency of a number has the same index as the number
+						}
+						else
+						{
+							pieceBin.add(timeDifference);
+							pieceBinFrequencies.add(1);
+						}
+					}
+				}
+			}
+			
+			//process bin frequencies
+			System.out.println("\nprocessing piece's bin frequencies");
+			if(pieceBinFrequencies.size()>0)
+			{
+				int indexOfLargestFreq=0;
+				//System.out.println("PIECE BIN FREQUENCIES");
+				for (int j = 0; j < pieceBinFrequencies.size(); j++)
+				{
+					System.out.print(" "+pieceBinFrequencies.get(j)+" ");
+					if(j==0)
+					{
+						indexOfLargestFreq=j;
+					}
+					else
+					{
+						if(pieceBinFrequencies.get(j)>pieceBinFrequencies.get(indexOfLargestFreq))
+						{
+							indexOfLargestFreq=j;
+							//System.out.println(binFrequencies.get(i)+" is larger than "+binFrequencies.get(i-1));
+						}
+					}
+				}
+				System.out.println("\n THE LAGEST FREQ = "+pieceBinFrequencies.get(indexOfLargestFreq));
+			}
+			else
+			{
+				System.err.println("****none of the hashes from this piece and the channel appear to match****\n# HashSetGroup.java #");
+			}
+			
 		}
 	}
 	
@@ -121,9 +234,10 @@ public class HashSetGroup
 				}
 				else
 				{
-					if(binFrequencies.get(i)>=binFrequencies.get(i-1))
+					if(binFrequencies.get(i)>binFrequencies.get(indexOfLargestFreq))
 					{
 						indexOfLargestFreq=i;
+						//System.out.println(binFrequencies.get(i)+" is larger than "+binFrequencies.get(i-1));
 					}
 				}
 			}
@@ -135,5 +249,4 @@ public class HashSetGroup
 		}
 		
 	}
-	
 }

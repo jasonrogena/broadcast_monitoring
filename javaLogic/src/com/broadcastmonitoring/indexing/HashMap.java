@@ -76,7 +76,7 @@ public class HashMap
 				
 				for (int j = 0; j < freqMagnitudes[i].length; j++)
 				{
-					int pass=0;
+					/*int pass=0;
 					if((i-1)>=0)
 					{
 						if(freqMagnitudes[i][j]>freqMagnitudes[i-1][j])
@@ -135,6 +135,20 @@ public class HashMap
 					else
 					{
 						result[i][j]=0;
+					}*/
+					
+					if(isPeak(100, j, freqMagnitudes[i], 100))
+					{
+						result[i][j]=1;
+						if(peakProcessor==null)
+						{
+							peakProcessor=new PeakProcessor(targetZoneSize,anchor2peakMaxFreqDiff);
+						}
+						peakProcessor.addPeak(i, frames[i].getRealTime(), j, frames[i].getTimestamp());
+					}
+					else
+					{
+						result[i][j]=0;
 					}
 				}
 			}
@@ -166,6 +180,34 @@ public class HashMap
 		
 		return peakProcessor;
 		
+	}
+	
+	private boolean isPeak(int k,int i,double[] array, int threshold)
+	{
+		double sum1=0;
+		for (int j = i-1; j >=i-k && j>=0; j--)
+		{
+			sum1=sum1+array[j];
+		}
+		double div1=sum1/k;
+		div1=array[i]-div1;
+		
+		double sum2=0;
+		for (int j = i+1; j < array.length && j<=i+k; j++)
+		{
+			sum2=sum2+array[j];
+		}
+		double div2=sum2/k;
+		div2=array[i]-div2;
+		
+		double div=(div1+div2)/2;
+		if(div>=threshold)
+		{
+			//System.out.print(" "+div+" ");
+			return true;
+		}
+		
+		return false;
 	}
 	
 	private class HashProcessor implements Runnable
@@ -228,7 +270,7 @@ public class HashMap
 							database.addColumnValue(hashes.get(0).getTimestamp());
 							database.addColumnValue(hashes.get(hashes.size()-1).getTimestamp());
 							database.addColumnValue(fileName);
-							database.addColumnValue(1);
+							database.addColumnValue(3);
 							database.addColumnValue(hashes.get(0).getRealTime());
 							
 							database.executeInsert();
