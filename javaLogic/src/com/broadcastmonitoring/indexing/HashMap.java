@@ -270,7 +270,7 @@ public class HashMap
 							database.addColumnValue(hashes.get(0).getTimestamp());
 							database.addColumnValue(hashes.get(hashes.size()-1).getTimestamp());
 							database.addColumnValue(fileName);
-							database.addColumnValue(3);
+							database.addColumnValue(5);
 							database.addColumnValue(hashes.get(0).getRealTime());
 							
 							database.executeInsert();

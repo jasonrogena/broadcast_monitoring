@@ -36,10 +36,14 @@ public class HashSetGroup
 		System.out.println("--------------------------------------------------");
 		System.out.println("Deserializing group hashes");
 		deserializeHashSets();
-		System.out.println("chopping advert hashSet");
+		/*System.out.println("chopping advert hashSet");
 		chopAdvertHashSet();
 		System.out.println("Processing advert pieces");
-		processAdvertHashPieces();
+		processAdvertHashPieces();*/
+		System.out.println("Comparing hashes");
+		matchHashes();
+		System.out.println("processing bin frequencies");
+		processBinFrequencies();
 	}
 	
 	public void showHashSetUrls()
