@@ -1,12 +1,19 @@
 package com.broadcastmonitoring.searching;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Scanner;
 import java.util.TimeZone;
 
@@ -19,6 +26,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import com.broadcastmonitoring.database.Database;
 import com.broadcastmonitoring.indexing.Frame;
+import com.broadcastmonitoring.indexing.Hash;
 import com.broadcastmonitoring.indexing.HashMap;
 import com.broadcastmonitoring.utils.StreamGobbler;
 
@@ -34,6 +42,9 @@ public class SearchingServer
 	private static final int startFreq=50;
 	private static final int targetZoneSize=5;
 	private static final int anchor2peakMaxFreqDiff=5;
+	private static final int hashSetGroupSize=7;
+	private static final String hashDir="../bin/hashes";
+	
 	public static void main(String[] args)
 	{
 		//user uploads the video or audio
@@ -41,7 +52,7 @@ public class SearchingServer
 		String name=getSearchableContentName();
 		String url=getAdvertURL();
 		
-		//if advertisement is video, rip audio from video
+		//if searchable content is video, rip audio from video
 		if(mediaType==MEDIA_TYPE_VIDEO)
 		{
 			//AudioRipper audioRipper=new AudioRipper(url);
@@ -55,18 +66,15 @@ public class SearchingServer
 		//add searchable content to database
 		int id=addSearchableContentToDB(name);
 		
-		//get stream from audio WAV file
+		//get stream from audio WAV file, generate hashes from stream and store hashes in database
 		generateHashes(url,id);
 		
-		//generate hashes from stream
-		
-		//store hashes in database
+		//server selects key searchable content piece
+		final List<Hash> key=getKeyPiece(hashSetGroupSize, id, hashDir);
 		
 		//user selects channel to search
 		
-		//server selects key advert piece
-		
-		//key advert piece is used to search through channel hashSets
+		//key searchable content piece is used to search through channel hashSets
 		
 		//if key matches with hashSet then run the search algorithm
 		in.close();
@@ -217,8 +225,11 @@ public class SearchingServer
 			
 			database.executeInsert();
 			
+			database.close();
 			return id;
 		}
+		
+		database.close();
 		return -1;
 	}
 	
@@ -291,5 +302,50 @@ public class SearchingServer
 			e.printStackTrace();
 		}
 		
+	}
+	
+	private static List<Hash> getKeyPiece(int hashSetGroupSize, int id, String hashDir)
+	{
+		System.out.println("Determining key for searchable content");
+		//set keyPiece size in the number of hashSets
+		int keyPieceSize=hashSetGroupSize*2;
+		
+		List<Hash> sContentHashes=new ArrayList<Hash>();
+		
+		//get hashsets from database
+		Database database=new Database("broadcast_monitoring", "root", "jason");
+		ResultSet fetchedHashSetUrls=database.runSelectQuery("SELECT url FROM `hash_set` WHERE parent = "+String.valueOf(id)+" AND `parent_type` = 1 ORDER BY `start_real_time` ASC LIMIT "+String.valueOf(keyPieceSize));
+		/*the above query selects the first hashSets of the searchable content
+		 * this is what will be the key for the searchable content*/
+		if(fetchedHashSetUrls!=null)
+		{
+			try
+			{
+				while(fetchedHashSetUrls.next())
+				{
+					InputStream hashSetSerFile=new FileInputStream(hashDir+"/"+fetchedHashSetUrls.getString(1));
+					InputStream buffer=new BufferedInputStream(hashSetSerFile);
+					ObjectInput objectInput=new ObjectInputStream(buffer);
+					List<Hash> fetchedHashSet=(List<Hash>)objectInput.readObject();
+					if(fetchedHashSet!=null)
+					{
+						sContentHashes.addAll(fetchedHashSet);
+					}
+					else
+					{
+						System.err.println("****"+fetchedHashSetUrls.getString(1)+" was not deserialized****\n# SearchServer.java #");
+					}
+					objectInput.close();
+				}
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		database.close();
+		System.out.println("Number of hashes in key : "+sContentHashes.size());
+		return sContentHashes;
 	}
 }
