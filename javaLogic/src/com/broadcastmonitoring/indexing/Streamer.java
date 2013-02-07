@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Scanner;
 import java.util.TimeZone;
 
 import javax.sound.sampled.AudioFormat;
@@ -87,6 +88,9 @@ public class Streamer
 			Frame[] frameBuffer=new Frame[hashmapSize];
 			int frameCount=1;
 			int timeCounter=lastTimeValue;
+			Scanner in=new Scanner(System.in);
+			System.out.println("enter the channel number");
+			int channelNumber=in.nextInt();
 			while(true)
 			{
 				int count=line.read(buffer, 0, buffer.length);
@@ -121,7 +125,7 @@ public class Streamer
 						//frameBuffer[0].printBuffer();
 						if(frameCount==hashmapSize)
 						{
-							HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff);
+							HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff,channelNumber,0);
 							//TODO: visualize frames
 							hashMap.generateHashes();
 							frameCount=1;

@@ -14,14 +14,18 @@ public class HashMap
 	protected final Frame[] frames;
 	protected final int targetZoneSize;
 	protected final int anchor2peakMaxFreqDiff;
+	protected final int parent;
+	protected final int parentType;
 
-	public HashMap(Frame[] frames, int targetZoneSize, int anchor2peakMaxFreqDiff)
+	public HashMap(Frame[] frames, int targetZoneSize, int anchor2peakMaxFreqDiff, int parent, int parentType)
 	{
 		//frames[0].printBuffer();
 		//frames[9].printBuffer();
 		this.frames=frames;
 		this.targetZoneSize=targetZoneSize;
 		this.anchor2peakMaxFreqDiff=anchor2peakMaxFreqDiff;
+		this.parent=parent;
+		this.parentType=parentType;
 	}
 	
 	private double[][] generateFreqMagnitudes()
@@ -266,12 +270,13 @@ public class HashMap
 							objectOutputStream=new ObjectOutputStream(fileOutputStream);
 							objectOutputStream.writeObject(hashes);
 							
-							database.initInsertStatement("INSERT INTO `broadcast_monitoring`.`hash_set`(`start_timestamp`,`stop_timestamp`,url,parent,`start_real_time`) VALUES (?,?,?,?,?)");
+							database.initInsertStatement("INSERT INTO `broadcast_monitoring`.`hash_set`(`start_timestamp`,`stop_timestamp`,url,parent,`start_real_time`,`parent_type`) VALUES (?,?,?,?,?,?)");
 							database.addColumnValue(hashes.get(0).getTimestamp());
 							database.addColumnValue(hashes.get(hashes.size()-1).getTimestamp());
 							database.addColumnValue(fileName);
-							database.addColumnValue(5);
+							database.addColumnValue(parent);
 							database.addColumnValue(hashes.get(0).getRealTime());
+							database.addColumnValue(parentType);
 							
 							database.executeInsert();
 						} 
