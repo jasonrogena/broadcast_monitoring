@@ -91,6 +91,7 @@ public class Streamer
 			Scanner in=new Scanner(System.in);
 			System.out.println("enter the channel number");
 			int channelNumber=in.nextInt();
+			int smoothingWidth=5;
 			while(true)
 			{
 				int count=line.read(buffer, 0, buffer.length);
@@ -125,7 +126,7 @@ public class Streamer
 						//frameBuffer[0].printBuffer();
 						if(frameCount==hashmapSize)
 						{
-							HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff,channelNumber,0);
+							HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff,channelNumber,0,smoothingWidth);
 							//TODO: visualize frames
 							hashMap.generateHashes();
 							frameCount=1;

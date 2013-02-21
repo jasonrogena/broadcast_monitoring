@@ -22,7 +22,7 @@ public class SearchHack
 		Database database=new Database("broadcast_monitoring", "root", "jason");
 		final List<Hash> advertHashes=new ArrayList<Hash>();;
 		String dir="../bin/hashes";
-		int hashSetGroupSize=10;//3 will be somewhat equal to 3secs worth of hashes
+		int hashSetGroupSize=7;//3 will be somewhat equal to 3secs worth of hashes
 		
 		//check if hash dir exists
 		File directory=new File(dir);
@@ -39,7 +39,7 @@ public class SearchHack
 		int channelId=in.nextInt();
 		
 		//fetch hash sets for the advert
-		ResultSet fetchedHashSetUrls=database.runSelectQuery("SELECT url FROM `hash_set` WHERE parent = "+String.valueOf(advertId));
+		ResultSet fetchedHashSetUrls=database.runSelectQuery("SELECT url FROM `hash_set` WHERE parent = "+String.valueOf(advertId)+" AND `parent_type` = 0");
 		if(fetchedHashSetUrls!=null)
 		{
 			try 
@@ -69,7 +69,7 @@ public class SearchHack
 			}
 			
 			//Fetch all the hash_sets for the channel
-			ResultSet fetchedChannelHashUrls=database.runSelectQuery("SELECT url FROM `hash_set` WHERE parent = "+String.valueOf(channelId)+" ORDER BY `start_real_time` ASC");
+			ResultSet fetchedChannelHashUrls=database.runSelectQuery("SELECT url FROM `hash_set` WHERE parent = "+String.valueOf(channelId)+" AND `parent_type` = 0 ORDER BY `start_real_time` ASC");
 			/*hashsets are ordered based on the realTime of the first hash in a hashset. this appears to be more accurate than 
 			ordering the hashes based on their ids since hashsets are inserted into the db asynchronously*/
 			if(fetchedChannelHashUrls!=null)

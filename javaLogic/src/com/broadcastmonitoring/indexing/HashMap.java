@@ -16,8 +16,9 @@ public class HashMap
 	protected final int anchor2peakMaxFreqDiff;
 	protected final int parent;
 	protected final int parentType;
+	protected final int smoothingWidth;
 
-	public HashMap(Frame[] frames, int targetZoneSize, int anchor2peakMaxFreqDiff, int parent, int parentType)
+	public HashMap(Frame[] frames, int targetZoneSize, int anchor2peakMaxFreqDiff, int parent, int parentType, int smoothingWidth)
 	{
 		//frames[0].printBuffer();
 		//frames[9].printBuffer();
@@ -26,6 +27,7 @@ public class HashMap
 		this.anchor2peakMaxFreqDiff=anchor2peakMaxFreqDiff;
 		this.parent=parent;
 		this.parentType=parentType;
+		this.smoothingWidth=smoothingWidth;
 	}
 	
 	private double[][] generateFreqMagnitudes()
@@ -214,6 +216,50 @@ public class HashMap
 		return false;
 	}
 	
+	private double[] smoothen(double[] wave, int smoothingWidth)
+	{
+		if(smoothingWidth%2!=0) //smoothing width should be an odd number
+		{
+			double[] result=new double[wave.length-(smoothingWidth-1)];
+			for (int i = 0; i < wave.length; i++)//for each of the points in the wave
+			{
+				if(i>=(smoothingWidth-1)/2 && (wave.length-i-1)>=(smoothingWidth-1)/2)//i shows the number of points before i. wave.length-i-1 shows the number of points after i
+				{
+					double numerator=0;
+					int denominator=0;
+					int multiplyer=(smoothingWidth-1)/2;
+					int j=i-1;
+					while(multiplyer>0)
+					{
+						numerator=numerator+(wave[j]*multiplyer);
+						denominator=denominator+multiplyer;
+						multiplyer--;
+						j--;
+					}
+					multiplyer=(smoothingWidth-1)/2;
+					j=i+1;
+					while(multiplyer>0)
+					{
+						numerator=numerator+(wave[j]*multiplyer);
+						denominator=denominator+multiplyer;
+						multiplyer--;
+						j++;
+					}
+					multiplyer=(smoothingWidth-1)/2;
+					numerator=numerator+(wave[i]*(multiplyer+1));
+					denominator=denominator+(multiplyer+1);
+					result[i-((smoothingWidth-1)/2)]=numerator/denominator;
+				}
+			}
+			return result;
+		}
+		else
+		{
+			System.err.println("****The smoothing width should be an odd number****\n# HashMap.java #");
+		}
+		return null;
+	}
+	
 	private class HashProcessor implements Runnable
 	{
 
@@ -222,7 +268,15 @@ public class HashMap
 		{
 			double[][] freqMagnitudes;
 			freqMagnitudes=generateFreqMagnitudes();
-			PeakProcessor peakProcessor=generateConstelationMap(freqMagnitudes);
+			double[][] smoothenedFreqMagnitudes=new double[freqMagnitudes.length][];
+			
+			//smoothen freqMagnitudes
+			for (int i = 0; i < freqMagnitudes.length; i++) 
+			{
+				smoothenedFreqMagnitudes[i]=smoothen(freqMagnitudes[i], smoothingWidth);
+			}
+			
+			PeakProcessor peakProcessor=generateConstelationMap(smoothenedFreqMagnitudes);
 			if(peakProcessor==null)
 			{
 				System.err.println("****The peak processor was not initialized. This is probably because no peaks were found in the constelation map****\n# HashMap.java #");

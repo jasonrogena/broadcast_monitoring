@@ -43,41 +43,89 @@ public class SearchingServer
 	private static final int targetZoneSize=5;
 	private static final int anchor2peakMaxFreqDiff=5;
 	private static final int hashSetGroupSize=7;
+	private static final int smoothingWidth=7;
 	private static final String hashDir="../bin/hashes";
 	
 	public static void main(String[] args)
 	{
-		//user uploads the video or audio
-		int mediaType=getMediaType();
-		String name=getSearchableContentName();
-		String url=getAdvertURL();
-		
-		//if searchable content is video, rip audio from video
-		if(mediaType==MEDIA_TYPE_VIDEO)
+		int id;
+		//ask user if searchable content has already been indexed
+		if(isSearchableContentNew()==false)
 		{
-			//AudioRipper audioRipper=new AudioRipper(url);
-			//url=audioRipper.rip();\
-			url=rip(url);
+			id=getSearchableContentId();
 		}
-		
-		//convert the audio WAV file
-		url=convertAudioFile(url);
-		
-		//add searchable content to database
-		int id=addSearchableContentToDB(name);
-		
-		//get stream from audio WAV file, generate hashes from stream and store hashes in database
-		generateHashes(url,id);
+		else
+		{
+			/*if content is new*/
+			
+			//user uploads the video or audio
+			int mediaType=getMediaType();
+			String name=getSearchableContentName();
+			String url=getAdvertURL();
+			
+			//if searchable content is video, rip audio from video
+			if(mediaType==MEDIA_TYPE_VIDEO)
+			{
+				//AudioRipper audioRipper=new AudioRipper(url);
+				//url=audioRipper.rip();\
+				url=rip(url);
+			}
+			
+			//convert the audio WAV file
+			url=convertAudioFile(url);
+			
+			//add searchable content to database
+			id=addSearchableContentToDB(name);
+			
+			//get stream from audio WAV file, generate hashes from stream and store hashes in database
+			generateHashes(url,id,smoothingWidth);
+			
+			/*end if*/
+		}
 		
 		//server selects key searchable content piece
 		final List<Hash> key=getKeyPiece(hashSetGroupSize, id, hashDir);
 		
 		//user selects channel to search
+		int channelNumber=getChannelNumber();
+		in.close();
 		
 		//key searchable content piece is used to search through channel hashSets
+		while(true)
+		{
+			searchKeyInChannel(id, channelNumber, hashSetGroupSize, key, hashDir);	
+		}
 		
 		//if key matches with hashSet then run the search algorithm
-		in.close();
+		
+	}
+	
+	private static boolean isSearchableContentNew()
+	{
+		System.out.println("Has the content you want to search been indexed before?\n 0 for no\n 1 for yes");
+		int result=in.nextInt();
+		in.nextLine();
+		if(result==0)//content has not been indexed therefore new
+		{
+			return true;
+		}
+		else if(result==1)
+		{
+			return false;
+		}
+		else
+		{
+			System.err.println("****Input error, the user entered an unrecognised command.\nAssuming that the content has not been indexed!\n# SearcingServer.java #****");
+			return true;
+		}
+	}
+	
+	private static int getSearchableContentId()
+	{
+		System.out.println("Enter the searchable content's ID");
+		int id=in.nextInt();
+		in.nextLine();
+		return id;
 	}
 	
 	private static int getMediaType()
@@ -233,7 +281,7 @@ public class SearchingServer
 		return -1;
 	}
 	
-	private static void generateHashes(String url, int id)
+	private static void generateHashes(String url, int id, int smoothingWidth)
 	{
 		File audioFile=new File(url);
 		try 
@@ -269,7 +317,7 @@ public class SearchingServer
 					frameBuffer[frameCount-1]=new Frame(buffer,redundantThreshold,startFreq,timeCounter, timestamp);
 					if(frameCount==hashmapSize)
 					{
-						HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff,id,1);//parent type for channel is 0
+						HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff,id,1,smoothingWidth);//parent type for channel is 0
 						hashMap.generateHashes();
 						frameCount=1;
 						frameBuffer=new Frame[hashmapSize];//make you use the framebuffer you passed in the hashmap before you reinitialize this framebuffer
@@ -308,7 +356,7 @@ public class SearchingServer
 	{
 		System.out.println("Determining key for searchable content");
 		//set keyPiece size in the number of hashSets
-		int keyPieceSize=hashSetGroupSize*2;
+		int keyPieceSize=hashSetGroupSize*4;
 		
 		List<Hash> sContentHashes=new ArrayList<Hash>();
 		
@@ -347,5 +395,94 @@ public class SearchingServer
 		database.close();
 		System.out.println("Number of hashes in key : "+sContentHashes.size());
 		return sContentHashes;
+	}
+	
+	private static int getChannelNumber()
+	{
+		System.out.println("What channel do you want to search");
+		int channelNumber=in.nextInt();
+		in.nextLine();
+		return channelNumber;
+	}
+	
+	private static void searchKeyInChannel(int id, int channel, int hashSetGroupSize, List<Hash> key, String hashDir)
+	{
+		//get search pointer from database
+		Database database=new Database("broadcast_monitoring", "root", "jason");
+		ResultSet resultSet=database.runSelectQuery("SELECT `last_start_real_time` FROM `search_pointer` WHERE parent = "+String.valueOf(id)+" AND channel = "+String.valueOf(channel));
+		if(resultSet!=null)
+		{
+			try
+			{
+				System.out.println("Obtaining the search pointer");
+				int lastStartRealTime;
+				if(resultSet.next())
+				{
+					lastStartRealTime=resultSet.getInt(1);
+					System.out.println("Pointer found. Pointing to time : "+lastStartRealTime);
+				}
+				else//no search pointer exists
+				{
+					System.out.println("Pointer not found, adding a new pointer to the database");
+					database.initInsertStatement("INSERT INTO `search_pointer`(parent,channel,`last_hash_set_id`,`last_start_real_time`) VALUES(?,?,?,?)");
+					database.addColumnValue(id);
+					database.addColumnValue(channel);
+					database.addColumnValue(0);
+					database.addColumnValue(0);
+					
+					database.executeInsert();
+					
+					lastStartRealTime=0;
+				}
+				
+				//check if the first hashSets after the pointer can form a hashSetGroup
+				ResultSet fetchedNumberOfHashSets=database.runSelectQuery("SELECT COUNT(id) FROM `hash_set` WHERE parent = "+String.valueOf(channel)+" AND `parent_type` = 0 AND `start_real_time` > "+String.valueOf(lastStartRealTime)+" ORDER BY `start_real_time` ASC");
+				if(fetchedNumberOfHashSets!=null)
+				{
+					if(fetchedNumberOfHashSets.next())
+					{
+						int numberofHashSets=fetchedNumberOfHashSets.getInt(1);
+						System.out.println("number of hash sets in database after last firstrealtime : "+numberofHashSets);
+						if(numberofHashSets>=hashSetGroupSize)//hash sets can form a group
+						{
+							//fetch
+							ResultSet fetchedChannelHashUrls=database.runSelectQuery("SELECT url,`start_real_time` FROM `hash_set` WHERE parent = "+String.valueOf(channel)+" AND `parent_type` = 0 AND `start_real_time` > "+String.valueOf(lastStartRealTime)+" ORDER BY `start_real_time` ASC");
+							if(fetchedChannelHashUrls!=null)
+							{
+								int currentGroupNumber=0;
+								List<String> groupUrls=new ArrayList<String>();
+								while(fetchedChannelHashUrls.next())
+								{
+									currentGroupNumber++;
+									groupUrls.add(fetchedChannelHashUrls.getString(1));
+									if(currentGroupNumber==hashSetGroupSize)//the last hash set in the group
+									{
+										//update pointer
+										int newLastStartRealTime=fetchedChannelHashUrls.getInt(2);
+										System.out.println("Updating last firstRealTime to :"+newLastStartRealTime);
+										database.runUpdateQuery("UPDATE `search_pointer` SET `last_start_real_time` = "+String.valueOf(newLastStartRealTime)+" WHERE parent = "+String.valueOf(id)+" AND channel = "+String.valueOf(channel));
+										
+										//compare
+										KeyProcessor keyProcessor=new KeyProcessor(groupUrls, key, hashDir);
+										keyProcessor.process();
+										
+										//set resultset to last row
+										fetchedChannelHashUrls.last();
+									}
+								}
+							}
+							//update search pointer
+						}
+					}
+				}
+				
+				//if so, search hashsetgroup in key and update search pointer
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+		database.close();
 	}
 }

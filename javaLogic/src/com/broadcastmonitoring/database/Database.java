@@ -169,6 +169,23 @@ public class Database
 		return null;
 	}
 	
+	public int runUpdateQuery(String query)
+	{
+		if(connection!=null)
+		{
+			try 
+			{
+				preparedStatement=connection.prepareStatement(query);
+				return preparedStatement.executeUpdate();
+			} 
+			catch (SQLException e) 
+			{
+				e.printStackTrace();
+			}
+		}
+		return -1;
+	}
+	
 	public void close()
 	{
 		if(preparedStatement!=null)
