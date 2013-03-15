@@ -12,10 +12,11 @@ public class IndexingServer
 		int redundantThreshold=2; //
 		int startFreq=50; //determines the point at which low frequencies will be considered since lower frequencies have more pink noise (high pass filter because of the pink noise)
 		int targetZoneSize=5; //determines the number of peaks to be in a target zone when forming a hash
-		int anchor2peakMaxFreqDiff=5; //determines the range of frequencies to be considered when selecting the target zone for a hash
+		int anchor2peakMaxFreqDiff=1000; //determines the range of frequencies to be considered when selecting the target zone for a hash
+		int sampledFrequencies=5; //determines the frequencies to be sampled, if 100 then only frequencies divisible by 100 will be sampled
 		try
 		{
-			Streamer streamer=new Streamer(sampleRate, frameSize, hashmapSize, redundantThreshold, startFreq, targetZoneSize, anchor2peakMaxFreqDiff);
+			Streamer streamer=new Streamer(sampleRate, frameSize, hashmapSize, redundantThreshold, startFreq, targetZoneSize, anchor2peakMaxFreqDiff, sampledFrequencies);
 			streamer.startAnalyzing();
 		} 
 		catch (LineUnavailableException e)

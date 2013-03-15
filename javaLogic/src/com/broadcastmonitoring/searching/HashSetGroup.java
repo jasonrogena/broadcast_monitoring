@@ -1,24 +1,43 @@
 package com.broadcastmonitoring.searching;
 
+import info.monitorenter.gui.chart.Chart2D;
+import info.monitorenter.gui.chart.ITrace2D;
+import info.monitorenter.gui.chart.traces.Trace2DLtd;
+
+import java.awt.Color;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+import javax.swing.JFrame;
 
 import com.broadcastmonitoring.indexing.Hash;
 
 public class HashSetGroup
 {
-	List<String> hashSetUrls;
-	final List<Hash> advertHashes;
-	final List<Hash> groupHashes;
-	final String hashSetDir;
-	List<Double> bin;
-	List<Integer> binFrequencies;
-	List<List<Hash>> advertHashSetPieces; //TODO: not sure this will work
+	private List<String> hashSetUrls;
+	private final List<Hash> advertHashes;
+	private final List<Hash> groupHashes;
+	private final String hashSetDir;
+	private List<Double> bin;
+	private List<Integer> binFrequencies;
+	private List<List<Hash>> advertHashSetPieces;
+	private Map<Double, Integer> binMap;
+	private Chart2D chart;
+	private ITrace2D trace;
+	private long comparisonsDone;
+	private long matches;
+	
 	
 	public HashSetGroup(List<String> hashSetUrls, List<Hash> advertHashes, String dir)
 	{
@@ -29,6 +48,33 @@ public class HashSetGroup
 		bin=new ArrayList<Double>();
 		binFrequencies=new ArrayList<Integer>();
 		advertHashSetPieces=new ArrayList<List<Hash>>();
+		binMap=new HashMap<Double, Integer>();
+		comparisonsDone=0;
+		matches=0;
+		//initChart();
+	}
+	
+	private void initChart()
+	{
+		chart=new Chart2D();
+		trace=new Trace2DLtd(hashSetUrls.get(0));//the number of time differences is not known before hand
+		trace.setColor(Color.RED);
+		chart.addTrace(trace);
+		
+		JFrame frame=new JFrame();
+		frame.getContentPane().add(chart);
+		frame.setSize(1000,700);
+		frame.addWindowListener(new WindowAdapter()
+		{
+
+			@Override
+			public void windowClosing(WindowEvent e)
+			{
+				super.windowClosing(e);
+			}
+			
+		});
+		frame.setVisible(true);
 	}
 	
 	public void process()
@@ -205,10 +251,12 @@ public class HashSetGroup
 			}
 			for (int j = 0; j < advertHashes.size(); j++)//compare the hash with all the hashes in the advert
 			{
+				comparisonsDone++;
 				if(groupHashes.get(i).getF1()==advertHashes.get(j).getF1() && groupHashes.get(i).getF2()==advertHashes.get(j).getF2() && groupHashes.get(i).getTimeDifference()==advertHashes.get(j).getTimeDifference())
 				{
+					matches++;
 					double timeDifference=groupHashes.get(i).getRealTime()-advertHashes.get(j).getRealTime();
-					if(bin.contains(timeDifference))
+					/*if(bin.contains(timeDifference))
 					{
 						binFrequencies.set(bin.indexOf(timeDifference), binFrequencies.get(bin.indexOf(timeDifference))+1);//increment frequency of number by one
 						//the assumption here is that the frequency of a number has the same index as the number
@@ -217,6 +265,15 @@ public class HashSetGroup
 					{
 						bin.add(timeDifference);
 						binFrequencies.add(1);
+					}*/
+					
+					if(binMap.containsKey(timeDifference))
+					{
+						binMap.put(timeDifference, binMap.get(timeDifference)+1);//increment frequency (key value) by one
+					}
+					else
+					{
+						binMap.put(timeDifference, 1);
 					}
 				}
 			}
@@ -225,7 +282,7 @@ public class HashSetGroup
 	
 	private void processBinFrequencies()
 	{
-		if(binFrequencies.size()>0)
+		/*if(binFrequencies.size()>0)
 		{
 			int indexOfLargestFreq=0;
 			System.out.println("BIN FREQUENCIES");
@@ -246,6 +303,34 @@ public class HashSetGroup
 				}
 			}
 			System.out.println("\n THE LAGEST FREQ = "+binFrequencies.get(indexOfLargestFreq));
+		}*/
+		if(binMap.size()>0)
+		{
+			System.out.println("BIN FREQUENCIES");
+			long largestFrequency=0;
+			SortedSet<Double> keys=new TreeSet<Double>(binMap.keySet());
+			for(Double key : keys)
+			{
+				System.out.print(" "+key+" = "+binMap.get(key)+" ");
+				//trace.addPoint(key, binMap.get(key));
+				if(binMap.get(key)>largestFrequency)
+				{
+					largestFrequency=binMap.get(key);
+				}
+			}
+			System.out.println("\n largest frequency = "+largestFrequency);
+			long a=largestFrequency*10000000;
+			a=a/comparisonsDone;
+			long b=largestFrequency*10000;
+			b=b/matches;
+			System.out.println(comparisonsDone+" comparisons done. Ratio btwn largest freq & comparisons done = "+a);
+			System.out.println(matches+" - total matches. Ratio btwn largest freq & total matches = "+b);
+			/*try {
+				Thread.sleep(10000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}*/
 		}
 		else
 		{

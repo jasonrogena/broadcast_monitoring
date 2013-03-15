@@ -2,6 +2,7 @@ package com.broadcastmonitoring.indexing;
 
 import com.broadcastmonitoring.database.Database;
 
+import java.awt.image.SampleModel;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -17,8 +18,9 @@ public class HashMap
 	protected final int parent;
 	protected final int parentType;
 	protected final int smoothingWidth;
+	protected final int sampledFrequencies;
 
-	public HashMap(Frame[] frames, int targetZoneSize, int anchor2peakMaxFreqDiff, int parent, int parentType, int smoothingWidth)
+	public HashMap(Frame[] frames, int targetZoneSize, int anchor2peakMaxFreqDiff, int parent, int parentType, int smoothingWidth, int sampledFrequencies)
 	{
 		//frames[0].printBuffer();
 		//frames[9].printBuffer();
@@ -28,6 +30,7 @@ public class HashMap
 		this.parent=parent;
 		this.parentType=parentType;
 		this.smoothingWidth=smoothingWidth;
+		this.sampledFrequencies=sampledFrequencies;
 	}
 	
 	private double[][] generateFreqMagnitudes()
@@ -150,7 +153,11 @@ public class HashMap
 						{
 							peakProcessor=new PeakProcessor(targetZoneSize,anchor2peakMaxFreqDiff);
 						}
-						peakProcessor.addPeak(i, frames[i].getRealTime(), j, frames[i].getTimestamp());
+						
+						if(j%sampledFrequencies==0)//if frequency of peak is divisible by sampledFrequencies
+						{
+							peakProcessor.addPeak(i, frames[i].getRealTime(), j, frames[i].getTimestamp());
+						}
 					}
 					else
 					{
@@ -276,7 +283,8 @@ public class HashMap
 				smoothenedFreqMagnitudes[i]=smoothen(freqMagnitudes[i], smoothingWidth);
 			}
 			
-			PeakProcessor peakProcessor=generateConstelationMap(smoothenedFreqMagnitudes);
+			//PeakProcessor peakProcessor=generateConstelationMap(smoothenedFreqMagnitudes);
+			PeakProcessor peakProcessor=generateConstelationMap(freqMagnitudes);
 			if(peakProcessor==null)
 			{
 				System.err.println("****The peak processor was not initialized. This is probably because no peaks were found in the constelation map****\n# HashMap.java #");

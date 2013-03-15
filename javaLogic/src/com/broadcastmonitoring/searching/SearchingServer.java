@@ -32,6 +32,7 @@ import com.broadcastmonitoring.utils.StreamGobbler;
 
 public class SearchingServer
 {
+	//TODO: THERE IS DEFFINATELY A PROBLEM WITH THE SEARCH SERVER. IT DOES NOT BEHAVE THE SAME WAY AS THE SEARCH HACK
 	public static final int MEDIA_TYPE_AUDIO=0;
 	public static final int MEDIA_TYPE_VIDEO=1;
 	private static Scanner in=new Scanner(System.in);
@@ -41,9 +42,10 @@ public class SearchingServer
 	private static final int redundantThreshold=2;
 	private static final int startFreq=50;
 	private static final int targetZoneSize=5;
-	private static final int anchor2peakMaxFreqDiff=5;
+	private static final int anchor2peakMaxFreqDiff=1000;
+	private static final int sampledFrequencies=100;
 	private static final int hashSetGroupSize=7;
-	private static final int smoothingWidth=7;
+	private static final int smoothingWidth=101;
 	private static final String hashDir="../bin/hashes";
 	
 	public static void main(String[] args)
@@ -175,7 +177,7 @@ public class SearchingServer
 			String timestamp=sdf.format(date);
 			String newURL="/tmp/"+timestamp+".wav";
 			System.out.println(newURL);
-			String command="mplayer -slave -ao pcm:fast:file="+newURL+" -vo null -vc null "+url;
+			String command="mplayer -slave -ao pcm:fast:file="+newURL+" -vo null -vc null "+url;//TODO: does reducing volume have a bad impact on recognition
 			Process mPlayerProcess=Runtime.getRuntime().exec(command);
 			
 			StreamGobbler errorGobbler=new StreamGobbler(mPlayerProcess.getErrorStream(), "ERROR");
@@ -317,7 +319,7 @@ public class SearchingServer
 					frameBuffer[frameCount-1]=new Frame(buffer,redundantThreshold,startFreq,timeCounter, timestamp);
 					if(frameCount==hashmapSize)
 					{
-						HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff,id,1,smoothingWidth);//parent type for channel is 0
+						HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff,id,1,smoothingWidth, sampledFrequencies);//parent type for channel is 0
 						hashMap.generateHashes();
 						frameCount=1;
 						frameBuffer=new Frame[hashmapSize];//make you use the framebuffer you passed in the hashmap before you reinitialize this framebuffer
@@ -356,7 +358,7 @@ public class SearchingServer
 	{
 		System.out.println("Determining key for searchable content");
 		//set keyPiece size in the number of hashSets
-		int keyPieceSize=hashSetGroupSize*4;
+		int keyPieceSize=hashSetGroupSize*2;
 		
 		List<Hash> sContentHashes=new ArrayList<Hash>();
 		

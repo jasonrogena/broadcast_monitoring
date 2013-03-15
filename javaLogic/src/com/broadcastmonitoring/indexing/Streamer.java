@@ -26,8 +26,9 @@ public class Streamer
 	protected final int lastTimeValue;
 	protected final int targetZoneSize;
 	protected final int anchor2peakMaxFreqDiff;
+	protected final int sampledFrequencies;
 
-	public Streamer(float sampleRate, int frameSize, int hashmapSize, int redundantThreshold, int startFreq, int targetZoneSize, int anchor2peakMaxFreqDiff) throws LineUnavailableException
+	public Streamer(float sampleRate, int frameSize, int hashmapSize, int redundantThreshold, int startFreq, int targetZoneSize, int anchor2peakMaxFreqDiff, int sampledFrequencies) throws LineUnavailableException
 	{
 		this.sampleRate=sampleRate;
 		this.frameSize=frameSize;
@@ -36,6 +37,7 @@ public class Streamer
 		this.hashmapSize=hashmapSize;
 		this.targetZoneSize=targetZoneSize;
 		this.anchor2peakMaxFreqDiff=anchor2peakMaxFreqDiff;
+		this.sampledFrequencies=sampledFrequencies;
 		
 		DataLine.Info info=new DataLine.Info(TargetDataLine.class, getFormat());
 		line=(TargetDataLine)AudioSystem.getLine(info);
@@ -91,7 +93,7 @@ public class Streamer
 			Scanner in=new Scanner(System.in);
 			System.out.println("enter the channel number");
 			int channelNumber=in.nextInt();
-			int smoothingWidth=5;
+			int smoothingWidth=101;
 			while(true)
 			{
 				int count=line.read(buffer, 0, buffer.length);
@@ -126,7 +128,7 @@ public class Streamer
 						//frameBuffer[0].printBuffer();
 						if(frameCount==hashmapSize)
 						{
-							HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff,channelNumber,0,smoothingWidth);
+							HashMap hashMap=new HashMap(frameBuffer,targetZoneSize, anchor2peakMaxFreqDiff,channelNumber,0,smoothingWidth, sampledFrequencies);
 							//TODO: visualize frames
 							hashMap.generateHashes();
 							frameCount=1;
