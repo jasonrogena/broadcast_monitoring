@@ -88,7 +88,7 @@ public class HashSetGroup
 		processAdvertHashPieces();*/
 		System.out.println("Comparing hashes");
 		matchHashes();
-		System.out.println("processing bin frequencies");
+		System.out.println("\nprocessing bin frequencies");
 		processBinFrequencies();
 	}
 	

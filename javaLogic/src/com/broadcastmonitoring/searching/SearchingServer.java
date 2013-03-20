@@ -33,6 +33,7 @@ import com.broadcastmonitoring.utils.StreamGobbler;
 public class SearchingServer
 {
 	//TODO: THERE IS DEFFINATELY A PROBLEM WITH THE SEARCH SERVER. IT DOES NOT BEHAVE THE SAME WAY AS THE SEARCH HACK
+	//TODO: best solution seems to let mplayer play the media and the server capture mplayer standard output
 	public static final int MEDIA_TYPE_AUDIO=0;
 	public static final int MEDIA_TYPE_VIDEO=1;
 	private static Scanner in=new Scanner(System.in);
@@ -43,7 +44,7 @@ public class SearchingServer
 	private static final int startFreq=50;
 	private static final int targetZoneSize=5;
 	private static final int anchor2peakMaxFreqDiff=1000;
-	private static final int sampledFrequencies=100;
+	private static final int sampledFrequencies=5;
 	private static final int hashSetGroupSize=7;
 	private static final int smoothingWidth=101;
 	private static final String hashDir="../bin/hashes";
@@ -358,7 +359,7 @@ public class SearchingServer
 	{
 		System.out.println("Determining key for searchable content");
 		//set keyPiece size in the number of hashSets
-		int keyPieceSize=hashSetGroupSize*2;
+		int keyPieceSize=hashSetGroupSize*7;
 		
 		List<Hash> sContentHashes=new ArrayList<Hash>();
 		
