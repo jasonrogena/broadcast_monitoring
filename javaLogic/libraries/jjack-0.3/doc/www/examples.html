@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"/>
+  <title>JJack Examples</title>
+  <link rel="stylesheet" type="text/css" href="img/jjack.css"/>
+  <meta name="author" content="Jens Gulden"/>
+</head>
+<body>
+
+  <div class='jjack_head'>
+  
+    <div class='jjack_logo'>
+      <div class='jjack_logo_head'>JJack</div>
+      <div class='jjack_logo_body'><img src="img/jack.png" alt="" width="75" height="15"/></div>
+      <div class='jjack_logo_foot'>Jack-to-Java</div>
+    </div>
+      
+    <div class='jjack_projecttitle'>JJack 0.3</div>
+    
+    <div class='jjack_logoright'>Jack up Java!</div>
+    
+    <div class='jjack_menu'>
+        <!--index_off-->         <a href="index.html">Overview</a>
+        <!--index_on             <b>Overview</b>                       index_off-->
+      | <!--download_off-->      <a href="download.html">Download</a>
+        <!--download_on          <b>Download</b>                       download_off-->
+      | <!--documentation_off--> <a href="documentation.html">Documentation</a>
+        <!--documentation_on     <b>Documentation</b>                  documentation_off-->
+      | <!--      <a href="examples.html">Examples</a>
+        -->          <b>Examples</b>                       
+      | <!--faq_off-->           <a href="faq.html">FAQ</a>
+        <!--faq_on               <b>FAQ</b>                            faq_off-->
+      |                          <a href="http://developer.berlios.de/projects/jjack/">Development Site</a>
+    </div>
+    
+    <div style='clear:both'></div>
+    
+  </div>
+
+  <div class='jjack_body'>
+
+    <h1 class='jjack_title'>Examples</h1>
+    
+    <div class='jjack_content'>
+    
+    <!-- page content ---------------------------------------------------- -->
+
+<h2>Audio examples</h2>
+
+<div class='jjack_audioexamples'>
+
+  <div class='jjack_audioexample'>
+    <a href="mp3/drums_delayed.mp3"><img src="img/speaker.png" alt="" width="33" height="31"/></a> <small><font face="Helvetica, Arial, sans-serif"><a href="mp3/drums_delayed.mp3">drums_delayed.mp3</a><small><small> (31s, 750 KB)</small></small></font></small>
+    Drums with delay-effect (example client <code>de.gulden.application.jjack.clients.Delay</code>)
+  </div>
+  
+  <div class='jjack_audioexample'>
+    <a href="mp3/drums_gated.mp3"><img height="31" width="33" alt="" src="img/speaker.png"/></a> <small><font face="Helvetica, Arial, sans-serif"><a href="mp3/drums_gated.mp3">drums_gated.mp3</a><small><small> (31 s, 750 KB)</small></small></font></small>
+    Gated drums (example client <code>de.gulden.application.jjack.clients.Gate</code>)
+  </div>
+  
+  <div class='jjack_audioexample'>
+    <a href="mp3/drums_raw.mp3"><img height="31" width="33" alt="" src="img/speaker.png"/></a> <small><font face="Helvetica, Arial, sans-serif"><a href="mp3/drums_raw.mp3">drums_raw.mp3</a><small><small>(31 s, 750 KB)</small></small></font></small>
+    Original sound file without effect
+  </div>
+</div>  
+
+<h2>Example Audio Processors</h2>
+
+<p>
+  The distribution package contains some <a href="../jjack-clients.html">example
+  audio processors</a> to demonstrate JJack's features, e. g.:
+</p>
+
+<ul class='jjack_exampleclient'>
+  <li class='jjack_exampleclient'>
+    <a href="../jjack-clients.html#DELAY">Delay-Effect</a><br/>
+    <a href="../jjack-clients.html#DELAY"><img class='jjack_exampleclient' src="img/client_delay.png" alt="Delay client" width="245" height="56"/></a>
+  </li>
+  <li class='jjack_exampleclient'>
+    <a href="../jjack-clients.html#OSCILLOSCOPE">Oscilloscope</a><br/>
+    <a href="../jjack-clients.html#OSCILLOSCOPE"><img class='jjack_exampleclient' src="img/client_oscilloscope_smaller.png" alt="Oscilloscope client" width="245" height="101"/></a>
+  </li>
+  <li class='jjack_exampleclient'>
+    <a href="../jjack-clients.html#VU">VU-Meter</a><br/>
+    <a href="../jjack-clients.html#VU"><img class='jjack_exampleclient' height="120" width="20" alt="VU-Meter client" src="img/client_vu.png"/></a>
+  </li>
+</ul>
+
+<!--<p>
+  See <a href="audioscreenshots.html">Screenshots</a> for more pictures.
+</p>-->
+
+<h2>Screenshots</h2>
+  
+<div class='jjack_screenshots'>
+  <div class='jjack_screenshot'>
+    <div class='jjack_screenshot_description'>
+      Using the <a href="http://java.sun.com/products/javabeans/beanbuilder/index.jsp">BeanBuilder</a> to build an interconnected JJack client:
+    </div>
+    <a target="_blank" href="img/screenshot2.png"><img class='jjack_screenshot' bordercolor="#000000" src="img/screenshot2small.jpg" alt="Using the BeanBox to build an interconnected JJack client." width="600" height="450" border="1"></a>
+  </div>
+  <div class='jjack_screenshot'>
+    <div class='jjack_screenshot_description'>
+      Running the above JJack client. The input is connected from xmms,
+      output is connected to the 'physical' ALSA device. This
+      configuration is set up via qjackctl:
+    </div>
+    <a target="_blank" href="img/screenshot3.png"><img class='jjack_screenshot' height="450" width="600" alt="Running the above JJack client." src="img/screenshot3small.jpg" border="1"></a>
+  </div>
+  <div class='jjack_screenshot'>
+    <div class='jjack_screenshot_description'>
+      Running the Gain and VU clients via the JJack shell application:
+    </div>
+    <a target="_blank" href="img/screenshot1.png"><img class='jjack_screenshot' src="img/screenshot1small.jpg" alt="Running the Gain and VU clients via the JJack shell application." width="600" height="450" border="1"></a>
+  </div>
+</div>
+  
+    <!-- page content end ------------------------------------------------ -->
+    
+    </div>
+    
+    <div style='clear: both'></div>
+
+  </div>
+    
+  <div class='jjack_foot'>
+  
+    <!--<div class='jjack_logobottom'>
+      <img src="img/jjackborder.png" alt="" width="200" height="35"/>
+    </div>-->
+            
+    <div class='jjack_copyright'>
+      &copy; Jens Gulden and others 2004-2007<br/>
+      Licensed under the <a target="_blank" href="http://www.gnu.org/licenses/lgpl.html">LGPL</a>
+    </div>
+
+    <div class='jjack_developlink'>
+      <a href="http://developer.berlios.de/projects/jjack/"><img height="16" width="62" alt="berliOS" src="http://developer.berlios.de/sflogo.php?group_id=1786"/></a>
+    </div>
+  </div>
+    
+</body>
+</html>
+

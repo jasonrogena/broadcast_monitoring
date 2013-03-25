@@ -1,0 +1,85 @@
+/* JJack css, Jens Gulden 2007 */
+
+body { font-family: Arial, Helvetica; }
+
+b { font-weight: normal; }
+
+div.jjack_menu b { font-weight: bold; }
+
+div.jjack_head { background-color: #9dbedf; vertical-align: middle; border-color: black; border-style: solid; border-top-width: 3px; border-bottom-width: 3px; border-left-width: 0; border-right-width: 0; }
+
+div.jjack_body { padding-left: 1em; padding-right: 1em; padding-bottom: 1em; border-color: black; border-style: solid; border-top-width: 0; border-bottom-width: 3px; border-left-width: 0; border-right-width: 0; }
+
+div.jjack_foot { margin-bottom: 1.5em; }
+
+div.jjack_logo { float: left; width:100px; }
+
+div.jjack_logo_head { text-align: center; }
+
+div.jjack_logo_body { text-align: center; }
+
+div.jjack_logo_foot { text-align: center; font-size: 80%; }
+
+div.jjack_logoright { float: right; margin: 1.75em; font-size: 66%; font-style: italic;}
+
+div.jjack_projecttitle { float: left; margin: 1em; width: 10%; text-align: center; font-style: italic; }
+
+div.jjack_logobottom { text-align: right; margin: 1em; }
+
+div.jjack_menu { padding: 1em }
+
+div.jjack_menu a { text-decoration: none; color: black; }
+
+div.jjack_menu a:hover { text-decoration: underline; color: black; }
+
+h1.jjack_title { margin-top: 0.75em; }
+
+h2 {  }
+
+div.jjack_content {  }
+
+div.jjack_copyright { text-align: right; margin-top: 0.5em; font-size: 75%; }
+
+div.jjack_developlink { text-align: right; margin-top: 0.5em; font-size: 75%; }
+
+div.jjack_developlink a img { border: 0; }
+
+div.jjack_overviewschema { float: right; }
+
+div.jjack_overviewschema img { border: 0; }
+
+li.jjack_exampleclient {  }
+
+img.jjack_exampleclient { margin-left: 7em; margin-top: -1.25em; margin-bottom: 1em; border-width: 1px; border-style: solid; border-color: black; vertical-align: top; }
+
+div.jjack_overview, div.jjack_downloadlink { horizontal-align: center; text-align: center; margin: 1em; padding: 1em; border-style: solid; border-width: 2px; border-color: black; background-color: #fffaf0; }
+
+div.jjack_archivecontent { margin-left: 2em; }
+
+div.jjack_audioexamples { margin: 1em; }
+
+div.jjack_overview { margin-right: 350px; margin-bottom: 30px; text-align: left; }
+
+div.jjack_audioexample { clear: both; text-align: left; padding: 0.5em; }
+
+img.jjack_audioexample { float: left; margin: 0.2em; vertical-align: top;  }
+
+div.jjack_screenshots { margin-top: 2em; }
+
+div.jjack_screenshot { margin-top: 1em; }
+
+div.jjack_screenshot_description { margin-top: 2em; margin-bottom: 1em; }
+
+img.jjack_screenshot { margin: 1em; border: 2px; border-style: solid; border-color: black;}
+
+div.jjack_diagram { margin-top: 1em; }
+
+ul.jjack_faq { list-style-type: none; margin-right: 5%; }
+
+ul.jjack_faq li { border: 1px; border-style: solid; border-color: gray; margin-bottom: 1em; }
+
+ul.jjack_faq li h2 { font-size: 100%; }
+
+img { border: 0; vertical-align: middle; }
+
+li { padding: 0.25em; }

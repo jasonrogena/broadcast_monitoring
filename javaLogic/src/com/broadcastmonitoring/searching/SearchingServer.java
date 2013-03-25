@@ -46,6 +46,8 @@ public class SearchingServer
 	private static final int anchor2peakMaxFreqDiff=1000;
 	private static final int sampledFrequencies=5;
 	private static final int hashSetGroupSize=7;
+	private static final int multiplyer=2;
+	private static final boolean limitKeyPieceSize=true;
 	private static final int smoothingWidth=101;
 	private static final String hashDir="../bin/hashes";
 	
@@ -87,7 +89,7 @@ public class SearchingServer
 		}
 		
 		//server selects key searchable content piece
-		final List<Hash> key=getKeyPiece(hashSetGroupSize, id, hashDir);
+		final List<Hash> key=getKeyPiece(hashSetGroupSize, id, hashDir, limitKeyPieceSize, multiplyer);
 		
 		//user selects channel to search
 		int channelNumber=getChannelNumber();
@@ -289,7 +291,7 @@ public class SearchingServer
 		File audioFile=new File(url);
 		try 
 		{
-			AudioInputStream audioInputStream=AudioSystem.getAudioInputStream(audioFile);
+			AudioInputStream audioInputStream=AudioSystem.getAudioInputStream(audioFile);//file headers stripped here
 			ByteArrayOutputStream arrayOutputStream=new ByteArrayOutputStream();
 			AudioFormat audioFormat=audioInputStream.getFormat();
 			
@@ -355,17 +357,26 @@ public class SearchingServer
 		
 	}
 	
-	private static List<Hash> getKeyPiece(int hashSetGroupSize, int id, String hashDir)
+	private static List<Hash> getKeyPiece(int hashSetGroupSize, int id, String hashDir, boolean limit, int multiplyer)
 	{
 		System.out.println("Determining key for searchable content");
 		//set keyPiece size in the number of hashSets
-		int keyPieceSize=hashSetGroupSize*7;
+		int keyPieceSize=hashSetGroupSize*multiplyer;
 		
 		List<Hash> sContentHashes=new ArrayList<Hash>();
 		
 		//get hashsets from database
 		Database database=new Database("broadcast_monitoring", "root", "jason");
-		ResultSet fetchedHashSetUrls=database.runSelectQuery("SELECT url FROM `hash_set` WHERE parent = "+String.valueOf(id)+" AND `parent_type` = 1 ORDER BY `start_real_time` ASC LIMIT "+String.valueOf(keyPieceSize));
+		ResultSet fetchedHashSetUrls;
+		if(limit==true)
+		{
+			fetchedHashSetUrls=database.runSelectQuery("SELECT url FROM `hash_set` WHERE parent = "+String.valueOf(id)+" AND `parent_type` = 1 ORDER BY `start_real_time` ASC LIMIT "+String.valueOf(keyPieceSize));
+		}
+		else
+		{
+			fetchedHashSetUrls=database.runSelectQuery("SELECT url FROM `hash_set` WHERE parent = "+String.valueOf(id)+" AND `parent_type` = 1 ORDER BY `start_real_time` ASC");
+		}
+		
 		/*the above query selects the first hashSets of the searchable content
 		 * this is what will be the key for the searchable content*/
 		if(fetchedHashSetUrls!=null)

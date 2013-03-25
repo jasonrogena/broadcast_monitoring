@@ -1,0 +1,135 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"/>
+  <title>JJack FAQ</title>
+  <link rel="stylesheet" type="text/css" href="img/jjack.css"/>
+  <meta name="author" content="Jens Gulden"/>
+</head>
+<body>
+
+  <div class='jjack_head'>
+  
+    <div class='jjack_logo'>
+      <div class='jjack_logo_head'>JJack</div>
+      <div class='jjack_logo_body'><img src="img/jack.png" alt="" width="75" height="15"/></div>
+      <div class='jjack_logo_foot'>Jack-to-Java</div>
+    </div>
+      
+    <div class='jjack_projecttitle'>JJack 0.3</div>
+    
+    <div class='jjack_logoright'>Jack up Java!</div>
+    
+    <div class='jjack_menu'>
+        <!--index_off-->         <a href="index.html">Overview</a>
+        <!--index_on             <b>Overview</b>                       index_off-->
+      | <!--download_off-->      <a href="download.html">Download</a>
+        <!--download_on          <b>Download</b>                       download_off-->
+      | <!--documentation_off--> <a href="documentation.html">Documentation</a>
+        <!--documentation_on     <b>Documentation</b>                  documentation_off-->
+      | <!--examples_off-->      <a href="examples.html">Examples</a>
+        <!--examples_on          <b>Examples</b>                       examples_off-->
+      | <!--           <a href="faq.html">FAQ</a>
+        <!-- -->               <b>FAQ</b>                            
+      |                          <a href="http://developer.berlios.de/projects/jjack/">Development Site</a>
+    </div>
+    
+    <div style='clear:both'></div>
+    
+  </div>
+
+  <div class='jjack_body'>
+
+    <h1 class='jjack_title'>FAQ</h1>
+    
+    <div class='jjack_content'>
+    
+    <!-- page content ---------------------------------------------------- -->
+
+
+<ul class='jjack_faq'>
+
+  <li>
+    <h2><i>Q:</i> How do I register JACK as a Java Sound mixer device?</h2>
+    <p>
+      Add <code>jjack.jar</code> to the classpath, and copy the native library file <code>libjjack.so</code> to your system's library path.
+      That's all, loading of the driver is done transparently by the Java virtual machine.
+    </p>
+  </li>
+
+  <li>
+    <h2 class='jjack_faq'><i>Q:</i> I want to develop a platform-independent audio application. Can I do it with JJack?</h2>
+    <p class='jjack_faq'>
+      JJack may be exactly what you are looking for. It provides an
+      interface between the <a href="http://www.jackaudio.org/">JACK
+      Audio Connection Kit</a> and the <a href="http://java.sun.com/">Java
+      programming language</a> to
+      make JACK's main features available from inside the Java virtual
+      machine. As JACK
+      is a professional audio system available for multiple platforms and
+      OSs, Java is an attractive
+      language for writing cross-platform clients for JACK. (The current
+      version
+      of JJack contains a Linux-version of the bridge library <code>libjjack.so</code>
+      only, but compiling it for other systems should be possible.)
+    </p>
+  </li>
+  
+  <li>
+    <h2 class='jjack_faq'><i>Q:</i> Isn't Java too slow to perform audio processing?</h2>
+    <p class='jjack_faq'>
+      Not necessarily. JJack uses some performance hints to be efficient, the
+      most important to mention is the use of direct ByteBuffers (see 
+      <a href="http://java.sun.com/j2se/1.4.2/docs/api/java/nio/ByteBuffer.html"><code>java.nio.ByteBuffer</code></a>)
+      to handle data exchange with the JACK daemon. Besides that, if a
+      program does a lot of numeric calculation witthout any other
+      interaction, there is a good chance that a just-in-time compiler will
+      create efficient code from the Java byte code.
+    </p>
+
+  </li>
+  
+  <li>
+    <h2 class='jjack_faq'><i>Q:</i> I get a native crash of the Java virtual machine when JJack is loaded. How can this be prevented?</h2>
+    <p class='jjack_faq'>
+      Try increasing the stack size for the Java virtual machine using the <code>-Xss</code> switch, e.g. <code>-Xss64m</code>.
+    </p>
+  </li>
+  
+  <li>
+    <h2 class='jjack_faq'><i>Q:</i> Does JJack run on Mac OS X?</h2>
+    <p class='jjack_faq'>
+      It is not tested yet. But if you know how to compile <code>libjjack.c</code>
+      to run on Macs, give it a try and please let me know how you did it.
+    </p>
+  </li>
+  
+</ul>
+
+    <!-- page content end ------------------------------------------------ -->
+    
+    </div>
+    
+    <div style='clear: both'></div>
+
+  </div>
+    
+  <div class='jjack_foot'>
+  
+    <!--<div class='jjack_logobottom'>
+      <img src="img/jjackborder.png" alt="" width="200" height="35"/>
+    </div>-->
+            
+    <div class='jjack_copyright'>
+      &copy; Jens Gulden and others 2004-2007<br/>
+      Licensed under the <a target="_blank" href="http://www.gnu.org/licenses/lgpl.html">LGPL</a>
+    </div>
+
+    <div class='jjack_developlink'>
+      <a href="http://developer.berlios.de/projects/jjack/"><img height="16" width="62" alt="berliOS" src="http://developer.berlios.de/sflogo.php?group_id=1786"/></a>
+    </div>
+  </div>
+    
+</body>
+</html>
+

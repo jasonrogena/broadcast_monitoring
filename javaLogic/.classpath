@@ -9,5 +9,35 @@
 	<classpathentry kind="lib" path="/home/jason/workspace/libraries/jchart2d-3.2.2/jide-oss-2.9.7.jar"/>
 	<classpathentry kind="lib" path="/home/jason/workspace/libraries/jchart2d-3.2.2/xmlgraphics-commons-1.3.1.jar"/>
 	<classpathentry kind="lib" path="/home/jason/workspace/libraries/mysql-connector-java-5.1.22/mysql-connector-java-5.1.22-bin.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/win32-x86.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/win32-amd64.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/w32ce-arm.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/sunos-x86.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/sunos-sparcv9.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/sunos-sparc.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/sunos-amd64.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/src.zip"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/src-full.zip"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/platform.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/openbsd-i386.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/linux-ppc64.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/linux-ppc.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/linux-ia64.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/linux-i386.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/linux-arm.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/linux-amd64.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/jna.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/jna-min.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/freebsd-i386.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/freebsd-amd64.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/doc.zip"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/darwin.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/android-arm.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/aix-ppc64.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/jna-master/dist/aix-ppc.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/JNAJack/org-jaudiolibs-jnajack.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/AudioServers/org-jaudiolibs-audioservers-jack.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/AudioServers/org-jaudiolibs-audioservers.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/AudioServers/org-jaudiolibs-audioservers-javasound.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

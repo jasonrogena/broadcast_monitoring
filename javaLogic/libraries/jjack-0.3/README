@@ -1,0 +1,459 @@
+------------------------------------------------------------------------------
+JJack 0.3 - Jack-to-Java Audio Driver and Bridge API
+Copyright (c) Jens Gulden and others.
+Distributed under the GNU Lesser General Public License (LGPL).
+This software comes with NO WARRANTY. See file LICENSE for details.
+------------------------------------------------------------------------------
+
+Quick Installation
+------------------------------------------------------------------------------
+Unpack the distribution archive and add <jjack>/lib/jjack.jar to the
+classpath. Then invoke any Java program with the additional parameter
+-Djava.library.path=<jjack>/lib/i386/Linux (according to your system).
+An audio device "JJack" will show up in the list of available Java Sound
+mixer devices.
+
+Detailed Installation
+------------------------------------------------------------------------------
+Unpack the distribution archive jjack-0.3.tar.gz to /usr/java. A directory
+/usr/java/jjack-0.3 will be created. You can also choose a different
+directory, in that case the absolute path values in the shell-scripts
+bin/jjack.sh and bin/runBeanBuilder.sh need to be adopted to your choice.
+
+The native bridge library libjjack.so (on Linux systems) needs to be 
+accessible by the Java Virtual Machine (JVM).
+There are two ways to make sure the JVM can load the native bridge library:
+- Copy the file <jjack-install-dir>/lib/<arch>/<os>/* to the system's default
+  library path. On Linux:
+  cp ./lib/i386/Linux/libjjack.so /usr/lib/
+  Alternatively create a filesystem-link to the binary file at the system's
+  default library location:
+  cd /usr/lib
+  ln -s <jjack-install-dir>/lib/i386/Linux/libjjack.so
+- Or the library-path can directly be set through the JVM system property
+  "java.library.path". Add the parameter
+  "-Djava.library.path=<jjack-install-dir>/lib/i386/Linux" to the invocation
+  command.
+
+Note: The current version includes pre-compiled binary libraries for
+i386-Linux, amd64-Linux and i386/ppc-Mac OS. To run JJack on different
+platforms, the source files libjjack.c and libjjack.h need to be compiled on
+your system. Please send a copy of the binary and a description of your
+compilation process if you succeed in running JJack on different platforms.
+
+Before using JJack, don't forget to start the JACK daemon. 
+This is either done by manually invoking jackd, or by configuring the system
+to start up jackd at boot time. There are several alternative ways to
+configure and run the daemon, see the JACK user documentation for details
+(http://www.djcj.org/LAU/jack/).
+
+Tested on
+------------------------------------------------------------------------------
+- Debian 3.0 unstable, kernel 2.4.24, jackd 0.94.0. libjack-0.80.0.so.0.0.23,
+  ALSA 1.0.2, Sun-J2SE SDK 1.4.2_03, both running jackd as root with
+  realtime-support, and as ordinary user without realtime-support.
+- Debian 3.0 testing, kernel 2.6.6, jackd 0.98.1, libjack-0.80.0.so.0.0.23,
+  ALSA 1.0.4rc2, Sun-J2SE SDK 1.4.2_04, running jackd as normal user without
+  realtime-capabilities.
+- Agnula DeMuDi 1.2, kernel 2.4.25 with multimedia/realtime patches, 
+  jackd 0.94.0, libjack-0.80.0.so.0.0.23, ALSA 1.0.6a, Sun-J2SE JRE 1.5.0,
+  running jackd as normal user without realtime-capabilities.
+- Musix 1.0 R2b1, kernel 2.6.21, jackd 0.101.1, libjack-0.100.0, ALSA 1.0.13,
+  Sun-JDK1.6.0_03-b05, running as root.s
+
+Files in the distribution archive
+---------------------------------
+jjack-0.3                                          
++-bin                                              
+| +-jjack.sh                                       Script for invoking the JJack shell application.
+| +-palette-jjack.xml                              Palette file for the BeanBuilder including the JJack example clients (used by runBeanBuilder.sh).
+| +-runBeanBuilder.sh                              Script for starting the BeanBuilder with JJack support.
++-classes                                          Compiled class files of all source files in src.
+| +-META-INF                                       
+| | +-services                                     
+| |   +-javax.sound.sampled.spi.MixerProvider      
+| +-com                                            
+| | +-petersalomonsen                              
+| |   +-jjack                                      
+| |     +-javasound                                
+| |       +-BlockingByteFIFO.class                 
+| |       +-BlockingFIFOTest.class                 
+| |       +-BlockingFIFOTest$1.class               
+| |       +-BlockingFIFOTest$2.class               
+| |       +-ByteIntConverter.class                 
+| |       +-ByteIntConverterTest.class             
+| |       +-JJackLine.class                        
+| |       +-JJackMixer.class                       
+| |       +-JJackMixerInfo.class                   
+| |       +-JJackMixerProvider.class               
+| |       +-JJackMixerProviderTest.class           
+| |       +-LineTests.class                        
+| |       +-SourceJJackLine.class                  
+| |       +-TargetJJackLine.class                  
+| +-de                                             
+| | +-gulden                                       
+| |   +-application                                
+| |   | +-jjack                                    
+| |   |   +-clients                                
+| |   |   | +-res                                  
+| |   |   | | +-icons                              
+| |   |   | |   +-cable.png                        
+| |   |   | |   +-channel.png                      
+| |   |   | |   +-delay.png                        
+| |   |   | |   +-gain.png                         
+| |   |   | |   +-gate.png                         
+| |   |   | |   +-oscillator.png                   
+| |   |   | |   +-oscilloscope.png                 
+| |   |   | |   +-socket.png                       
+| |   |   | |   +-vu.png                           
+| |   |   | +-ui                                   
+| |   |   | | +-AnimatedUIAbstract.class           
+| |   |   | | +-DelayUI.class                      
+| |   |   | | +-DelayUI$1.class                    
+| |   |   | | +-DelayUI$2.class                    
+| |   |   | | +-DelayUI$3.class                    
+| |   |   | | +-DelayUI$4.class                    
+| |   |   | | +-DelayUI$5.class                    
+| |   |   | | +-GateUI.class                       
+| |   |   | | +-GateUI$1.class                     
+| |   |   | | +-GateUI$2.class                     
+| |   |   | | +-OscilloscopeUI.class               
+| |   |   | | +-VUUI.class                         
+| |   |   | +-Cable.class                          
+| |   |   | +-CableBeanInfo.class                  
+| |   |   | +-Channel.class                        
+| |   |   | +-ChannelBeanInfo.class                
+| |   |   | +-Delay.class                          
+| |   |   | +-DelayBeanInfo.class                  
+| |   |   | +-Gain.class                           
+| |   |   | +-Gain$1.class                         
+| |   |   | +-GainBeanInfo.class                   
+| |   |   | +-Gate.class                           
+| |   |   | +-GateBeanInfo.class                   
+| |   |   | +-Oscilloscope.class                   
+| |   |   | +-OscilloscopeBeanInfo.class           
+| |   |   | +-Socket.class                         
+| |   |   | +-SocketBeanInfo.class                 
+| |   |   | +-VU.class                             
+| |   |   | +-VUBeanInfo.class                     
+| |   |   +-res                                    
+| |   |   | +-icon.png                             
+| |   |   +-JJack.class                            
+| |   |   +-JJack$1.class                          
+| |   |   +-JJackInfoBoxMouseListener.class        
+| |   +-framework                                  
+| |   | +-jjack                                    
+| |   |   +-util                                   
+| |   |   | +-benchmark                            
+| |   |   | | +-AudioBenchmark.class               
+| |   |   | | +-AudioBenchmark$1SquarePlayer.class 
+| |   |   | +-JJackPlayer.class                    
+| |   |   | +-JJackRecorder.class                  
+| |   |   +-JJackAudioChannel.class                
+| |   |   +-JJackAudioConsumer.class               
+| |   |   +-JJackAudioEvent.class                  
+| |   |   +-JJackAudioEvent$ChannelImpl.class      
+| |   |   +-JJackAudioEvent$PortImpl.class         
+| |   |   +-JJackAudioPort.class                   
+| |   |   +-JJackAudioProcessListener.class        
+| |   |   +-JJackAudioProcessor.class              
+| |   |   +-JJackAudioProcessorMonitorable.class   
+| |   |   +-JJackAudioProducer.class               
+| |   |   +-JJackBeanInfoAbstract.class            
+| |   |   +-JJackClient.class                      
+| |   |   +-JJackConstants.class                   
+| |   |   +-JJackException.class                   
+| |   |   +-JJackMonitor.class                     
+| |   |   +-JJackSystem.class                      
+| |   +-util                                       
+| |     +-nio                                      
+| |     | +-FifoFloat.class                        
+| |     | +-RingFloat.class                        
+| |     +-swing                                    
+| |     | +-DefaultMeterModel.class                
+| |     | +-LED.class                              
+| |     | +-MeterModel.class                       
+| |     | +-SliderLabeled.class                    
+| |     | +-SpinButton.class                       
+| |     | +-SpinButtonLabeled.class                
+| |     | +-VUMeter.class                          
+| |     +-Toolbox.class                            
+| +-JJack.class                                    
+| +-JJackSystem.class                              
++-doc                                              
+| +-api                                            Auto-generated Javadoc API-documentation.
+| | +-com                                          
+| | | +-petersalomonsen                            
+| | |   +-jjack                                    
+| | |     +-javasound                              
+| | |       +-BlockingByteFIFO.html                
+| | |       +-BlockingFIFOTest.html                
+| | |       +-ByteIntConverter.html                
+| | |       +-ByteIntConverterTest.html            
+| | |       +-JJackLine.html                       
+| | |       +-JJackMixer.html                      
+| | |       +-JJackMixerInfo.html                  
+| | |       +-JJackMixerProvider.html              
+| | |       +-JJackMixerProviderTest.html          
+| | |       +-LineTests.html                       
+| | |       +-SourceJJackLine.html                 
+| | |       +-TargetJJackLine.html                 
+| | |       +-package-frame.html                   
+| | |       +-package-summary.html                 
+| | |       +-package-tree.html                    
+| | +-de                                           
+| | | +-gulden                                     
+| | |   +-framework                                
+| | |   | +-jjack                                  
+| | |   |   +-util                                 
+| | |   |   | +-JJackPlayer.html                   
+| | |   |   | +-JJackRecorder.html                 
+| | |   |   | +-package-frame.html                 
+| | |   |   | +-package-summary.html               
+| | |   |   | +-package-tree.html                  
+| | |   |   +-JJackAudioChannel.html               
+| | |   |   +-JJackAudioConsumer.html              
+| | |   |   +-JJackAudioEvent.ChannelImpl.html     
+| | |   |   +-JJackAudioEvent.PortImpl.html        
+| | |   |   +-JJackAudioEvent.html                 
+| | |   |   +-JJackAudioPort.html                  
+| | |   |   +-JJackAudioProcessListener.html       
+| | |   |   +-JJackAudioProcessor.html             
+| | |   |   +-JJackAudioProcessorMonitorable.html  
+| | |   |   +-JJackAudioProducer.html              
+| | |   |   +-JJackBeanInfoAbstract.html           
+| | |   |   +-JJackClient.html                     
+| | |   |   +-JJackConstants.html                  
+| | |   |   +-JJackException.html                  
+| | |   |   +-JJackMonitor.html                    
+| | |   |   +-JJackSystem.html                     
+| | |   |   +-package-frame.html                   
+| | |   |   +-package-summary.html                 
+| | |   |   +-package-tree.html                    
+| | |   +-util                                     
+| | |     +-nio                                    
+| | |       +-FifoFloat.html                       
+| | |       +-RingFloat.html                       
+| | |       +-package-frame.html                   
+| | |       +-package-summary.html                 
+| | |       +-package-tree.html                    
+| | +-resources                                    
+| | | +-inherit.gif                                
+| | +-allclasses-frame.html                        
+| | +-allclasses-noframe.html                      
+| | +-constant-values.html                         
+| | +-deprecated-list.html                         
+| | +-help-doc.html                                
+| | +-index.html                                   
+| | +-index-all.html                               
+| | +-overview-frame.html                          
+| | +-overview-summary.html                        
+| | +-overview-tree.html                           
+| | +-package-list                                 
+| | +-serialized-form.html                         
+| | +-stylesheet.css                               
+| +-img                                            
+| | +-beanbuilder_gain.png                         
+| | +-beanbuilder_gain_bean.png                    
+| | +-beanbuilder_gain_connect1.png                
+| | +-beanbuilder_gain_connect2.png                
+| | +-beanbuilder_gain_connect3.png                
+| | +-beanbuilder_gain_connect4.png                
+| | +-beanbuilder_interconnect.png                 
+| | +-beanbuilder_interconnect_runtime.png         
+| | +-beanbuilder_jjack.png                        
+| | +-beanbuilder_loadjar.png                      
+| | +-beanbuilder_loadjar_palette.png              
+| | +-beanbuilder_nojjack.png                      
+| | +-beanbuilder_socket.png                       
+| | +-jjack_interconnect.png                       
+| | +-qjackctl.png                                 
+| | +-qjackctl_connected.png                       
+| | +-socket-small.png                             
+| | +-socket_button.png                            
+| +-uml                                            
+| | +-jjack.png                                    UML class diagram giving an overview on the JJack API.
+| +-www                                            JJack website.
+| | +-img                                          
+| | | +-tree                                       
+| | | | +-cl.png                                   
+| | | | +-clrd.png                                 
+| | | | +-clur.png                                 
+| | | | +-clurd.png                                
+| | | | +-file.png                                 
+| | | | +-foldercl.png                             
+| | | | +-folderop.png                             
+| | | | +-op.png                                   
+| | | | +-oprd.png                                 
+| | | | +-opur.png                                 
+| | | | +-opurd.png                                
+| | | | +-rd.png                                   
+| | | | +-ud.png                                   
+| | | | +-ur.png                                   
+| | | | +-urd.png                                  
+| | | | +-x.png                                    
+| | | +-client_cable.png                           
+| | | +-client_channel.png                         
+| | | +-client_delay.png                           
+| | | +-client_gain.png                            
+| | | +-client_gate.png                            
+| | | +-client_oscilloscope.png                    
+| | | +-client_oscilloscope_smaller.png            
+| | | +-client_socket.png                          
+| | | +-client_vu.png                              
+| | | +-grid.png                                   
+| | | +-grydisk.png                                
+| | | +-jack.png                                   
+| | | +-jjack.css                                  
+| | | +-jjack-schema.jpg                           
+| | | +-jjack-schema.png                           
+| | | +-jjack-schema.sxd                           
+| | | +-jjack-schema-small.png                     
+| | | +-jjack-schema2.png                          
+| | | +-jjack-schema2-gross.png                    
+| | | +-jjack-schema2-small.png                    
+| | | +-jjackborder.png                            
+| | | +-screenshot1.png                            
+| | | +-screenshot1small.jpg                       
+| | | +-screenshot1small.png                       
+| | | +-screenshot2.png                            
+| | | +-screenshot2small.jpg                       
+| | | +-screenshot2small.png                       
+| | | +-screenshot3.png                            
+| | | +-screenshot3small.jpg                       
+| | | +-screenshot3small.png                       
+| | | +-screenshot4.png                            
+| | | +-screenshot4.small.png                      
+| | | +-speaker.png                                
+| | +-mp3                                          
+| | | +-drums_delayed.mp3                          
+| | | +-drums_gated.mp3                            
+| | | +-drums_raw.mp3                              
+| | +-documentation.html                           
+| | +-download.html                                
+| | +-examples.html                                
+| | +-faq.html                                     
+| | +-index.html                                   
+| +-jjack.html                                     JJack manual.
+| +-jjack-beanbuilder.html                         Creating JJack clients with the BeanBuilder.
+| +-jjack-clients.html                             JJack example clients documentation.
+| +-jjack-develop.html                             Developing JJack clients.
++-lib                                              
+| +-amd64                                          
+| | +-Linux                                        
+| |   +-libjjack.so                                
+| +-i386                                           
+| | +-Linux                                        
+| |   +-libjjack.so                                Native bridge library to connect the Java virtual machine as a JACK client.
+| +-macos                                          
+| | +-README                                       
+| | +-libjjack.jnilib                              
+| +-jjack.jar                                      JJack driver and API classes bundled in one .jar-file.
+| +-jjack-clients.jar                              JJack example clients classes bundled in one .jar-file. Can be used as JavaBeans.
++-make                                             ANT build script and helper files for building JJack.
+| +-build.xml                                      
++-src                                              The project's source files, including utility classes.
+| +-META-INF                                       
+| | +-services                                     
+| |   +-javax.sound.sampled.spi.MixerProvider      
+| +-com                                            
+| | +-petersalomonsen                              
+| |   +-jjack                                      
+| |     +-javasound                                
+| |       +-BlockingByteFIFO.java                  
+| |       +-BlockingFIFOTest.java                  
+| |       +-ByteIntConverter.java                  
+| |       +-ByteIntConverterTest.java              
+| |       +-JJackLine.java                         
+| |       +-JJackMixer.java                        
+| |       +-JJackMixerInfo.java                    
+| |       +-JJackMixerProvider.java                
+| |       +-JJackMixerProviderTest.java            
+| |       +-LineTests.java                         
+| |       +-SourceJJackLine.java                   
+| |       +-TargetJJackLine.java                   
+| +-de                                             
+| | +-gulden                                       
+| |   +-application                                
+| |   | +-jjack                                    
+| |   |   +-clients                                
+| |   |   | +-res                                  
+| |   |   | | +-icons                              
+| |   |   | |   +-cable.png                        
+| |   |   | |   +-channel.png                      
+| |   |   | |   +-delay.png                        
+| |   |   | |   +-gain.png                         
+| |   |   | |   +-gate.png                         
+| |   |   | |   +-oscillator.png                   
+| |   |   | |   +-oscilloscope.png                 
+| |   |   | |   +-socket.png                       
+| |   |   | |   +-vu.png                           
+| |   |   | +-ui                                   
+| |   |   | | +-AnimatedUIAbstract.java            
+| |   |   | | +-DelayUI.java                       
+| |   |   | | +-GateUI.java                        
+| |   |   | | +-OscilloscopeUI.java                
+| |   |   | | +-VUUI.java                          
+| |   |   | +-Cable.java                           
+| |   |   | +-CableBeanInfo.java                   
+| |   |   | +-Channel.java                         
+| |   |   | +-ChannelBeanInfo.java                 
+| |   |   | +-Delay.java                           
+| |   |   | +-DelayBeanInfo.java                   
+| |   |   | +-Gain.java                            
+| |   |   | +-GainBeanInfo.java                    
+| |   |   | +-Gate.java                            
+| |   |   | +-GateBeanInfo.java                    
+| |   |   | +-Oscilloscope.java                    
+| |   |   | +-OscilloscopeBeanInfo.java            
+| |   |   | +-Socket.java                          
+| |   |   | +-SocketBeanInfo.java                  
+| |   |   | +-VU.java                              
+| |   |   | +-VUBeanInfo.java                      
+| |   |   +-res                                    
+| |   |   | +-icon.png                             
+| |   |   +-JJack.java                             
+| |   |   +-JJackInfoBoxMouseListener.java         
+| |   +-framework                                  
+| |   | +-jjack                                    
+| |   |   +-util                                   
+| |   |   | +-benchmark                            
+| |   |   | | +-AudioBenchmark.java                
+| |   |   | +-JJackPlayer.java                     
+| |   |   | +-JJackRecorder.java                   
+| |   |   +-JJackAudioChannel.java                 
+| |   |   +-JJackAudioConsumer.java                
+| |   |   +-JJackAudioEvent.java                   
+| |   |   +-JJackAudioPort.java                    
+| |   |   +-JJackAudioProcessListener.java         
+| |   |   +-JJackAudioProcessor.java               
+| |   |   +-JJackAudioProcessorMonitorable.java    
+| |   |   +-JJackAudioProducer.java                
+| |   |   +-JJackBeanInfoAbstract.java             
+| |   |   +-JJackClient.java                       
+| |   |   +-JJackConstants.java                    
+| |   |   +-JJackException.java                    
+| |   |   +-JJackMonitor.java                      
+| |   |   +-JJackSystem.java                       
+| |   |   +-libjjack.c                             
+| |   |   +-libjjack.h                             
+| |   |   +-libjjack.o                             
+| |   +-util                                       
+| |     +-nio                                      
+| |     | +-FifoFloat.java                         
+| |     | +-RingFloat.java                         
+| |     +-swing                                    
+| |     | +-DefaultMeterModel.java                 
+| |     | +-LED.java                               
+| |     | +-MeterModel.java                        
+| |     | +-SliderLabeled.java                     
+| |     | +-SpinButton.java                        
+| |     | +-SpinButtonLabeled.java                 
+| |     | +-VUMeter.java                           
+| |     +-Toolbox.java                             
+| +-JJack.java                                     
+| +-JJackQuickClientLaunch.java                    
+| +-JJackSystem.java                               
++-CHANGELOG                                        
++-LICENSE                                          GNU Lesser General Public License document.
++-README                                           The readme-file with most basic information.
