@@ -9,11 +9,13 @@ public class StreamGobbler extends Thread
 {
     InputStream is;
     String type;
+    boolean silent;
     
-    public StreamGobbler(InputStream is, String type)
+    public StreamGobbler(InputStream is, String type, boolean silent)
     {
         this.is = is;
         this.type = type;
+        this.silent=silent;
     }
     
     public void run()
@@ -24,11 +26,15 @@ public class StreamGobbler extends Thread
             BufferedReader br = new BufferedReader(isr);
             String line=null;
             while ( (line = br.readLine()) != null)
-                System.out.println(type + ">" + line);    
+            {
+            	if(silent==false)
+            		System.out.println(type + ">" + line);    
+            }
          }
         catch (IOException ioe)
         {
-        	ioe.printStackTrace();  
+        	if(silent==false)
+        		ioe.printStackTrace();  
         }
     }
 }

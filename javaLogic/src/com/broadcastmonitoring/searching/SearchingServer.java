@@ -4,7 +4,6 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
@@ -16,18 +15,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 import java.util.TimeZone;
-
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.UnsupportedAudioFileException;
-
 import com.broadcastmonitoring.database.Database;
 import com.broadcastmonitoring.indexing.Frame;
 import com.broadcastmonitoring.indexing.Hash;
 import com.broadcastmonitoring.indexing.HashMap;
+import com.broadcastmonitoring.indexing.Streamer;
 import com.broadcastmonitoring.utils.StreamGobbler;
 
 public class SearchingServer
@@ -38,6 +34,7 @@ public class SearchingServer
 	public static final int MEDIA_TYPE_VIDEO=1;
 	private static Scanner in=new Scanner(System.in);
 	
+	private static final float sampleRate=44100;
 	private static final int hashmapSize=10;
 	private static final int frameSize=2048;
 	private static final int redundantThreshold=2;
@@ -52,6 +49,38 @@ public class SearchingServer
 	private static final String hashDir="../bin/hashes";
 	
 	public static void main(String[] args)
+	{
+		int id=-1;
+		System.out.println("Which method do you want to use to index the searchable content?\n 1. Using internal conversions and bytearrays (buggy)\n 2. Using a loopback cable");
+		int method=in.nextInt();
+		in.nextLine();
+		if(method==1)
+		{
+			id=method1();
+		}
+		else if(method==2)
+		{
+			id=method2();
+		}
+		
+		//server selects key searchable content piece
+		final List<Hash> key=getKeyPiece(hashSetGroupSize, id, hashDir, limitKeyPieceSize, multiplyer);
+		
+		//user selects channel to search
+		int channelNumber=getChannelNumber();
+		in.close();
+		
+		//key searchable content piece is used to search through channel hashSets
+		while(true)
+		{
+			searchKeyInChannel(id, channelNumber, hashSetGroupSize, key, hashDir);	
+		}
+		
+		//if key matches with hashSet then run the search algorithm
+		
+	}
+	
+	private static int method1()
 	{
 		int id;
 		//ask user if searchable content has already been indexed
@@ -88,21 +117,28 @@ public class SearchingServer
 			/*end if*/
 		}
 		
-		//server selects key searchable content piece
-		final List<Hash> key=getKeyPiece(hashSetGroupSize, id, hashDir, limitKeyPieceSize, multiplyer);
-		
-		//user selects channel to search
-		int channelNumber=getChannelNumber();
-		in.close();
-		
-		//key searchable content piece is used to search through channel hashSets
-		while(true)
+		return id;
+	}
+	
+	private static int method2()
+	{
+		int id;
+		//ask user if searchable content has already been indexed
+		if(isSearchableContentNew()==false)
 		{
-			searchKeyInChannel(id, channelNumber, hashSetGroupSize, key, hashDir);	
+			id=getSearchableContentId();
 		}
-		
-		//if key matches with hashSet then run the search algorithm
-		
+		else
+		{
+			String name=getSearchableContentName();
+			String url=getAdvertURL();
+			
+			//add searchable content to database
+			id=addSearchableContentToDB(name);
+			
+			generateHashes2(url, id, smoothingWidth);
+		}
+		return id;
 	}
 	
 	private static boolean isSearchableContentNew()
@@ -183,8 +219,8 @@ public class SearchingServer
 			String command="mplayer -slave -ao pcm:fast:file="+newURL+" -vo null -vc null "+url;//TODO: does reducing volume have a bad impact on recognition
 			Process mPlayerProcess=Runtime.getRuntime().exec(command);
 			
-			StreamGobbler errorGobbler=new StreamGobbler(mPlayerProcess.getErrorStream(), "ERROR");
-			StreamGobbler outputGobbler=new StreamGobbler(mPlayerProcess.getInputStream(), "OUTPUT");
+			StreamGobbler errorGobbler=new StreamGobbler(mPlayerProcess.getErrorStream(), "ERROR", false);
+			StreamGobbler outputGobbler=new StreamGobbler(mPlayerProcess.getInputStream(), "OUTPUT", false);
 			errorGobbler.start();
 			outputGobbler.start();
 			
@@ -356,6 +392,27 @@ public class SearchingServer
 		}
 		
 	}
+
+	private static void generateHashes2(String url, int id, int smoothingWidth)
+	{
+		System.out.println("\nBefore indexing the searchable content ensure that:");
+		System.out.println(" - the audio output mixer is not muted");
+		System.out.println(" - the audio output mixer's volume is sufficient (above 80%)");
+		System.out.println(" - no audio in currently being played by this machine");
+		System.out.println("\nAfter ensuring the above, connect the loopback cable into\nthe line-out and line-in jacks in this machine and press enter");
+		in.nextLine();
+		
+		try 
+		{
+			Streamer streamer=new Streamer(sampleRate, frameSize, hashmapSize, redundantThreshold, startFreq, targetZoneSize, anchor2peakMaxFreqDiff, sampledFrequencies, id, url);
+			streamer.startAnalyzing();
+		} 
+		catch (Exception e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
 	private static List<Hash> getKeyPiece(int hashSetGroupSize, int id, String hashDir, boolean limit, int multiplyer)
 	{
@@ -388,6 +445,7 @@ public class SearchingServer
 					InputStream hashSetSerFile=new FileInputStream(hashDir+"/"+fetchedHashSetUrls.getString(1));
 					InputStream buffer=new BufferedInputStream(hashSetSerFile);
 					ObjectInput objectInput=new ObjectInputStream(buffer);
+					@SuppressWarnings("unchecked")
 					List<Hash> fetchedHashSet=(List<Hash>)objectInput.readObject();
 					if(fetchedHashSet!=null)
 					{
