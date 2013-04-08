@@ -3,7 +3,12 @@ package com.broadcastmonitoring.indexing;
 import java.io.IOException;
 import java.net.URL;
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.TimeZone;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,8 +25,13 @@ import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
@@ -46,6 +56,17 @@ public class IndexingServer extends Application implements Initializable
 	@FXML private TextField stationNameTF;
 	@FXML private Button settingsSaveButton;
 	@FXML private Button settingsCancelButton;
+	@FXML private Tab indexingTab;
+	@FXML private Button startIndexingButton;
+	@FXML private TableView<Station> indexingTable;
+	@FXML private TableColumn<Station, String> stationInterfaceTC;
+	@FXML private TableColumn<Station, String> stationTC;
+	@FXML private TableColumn<Station, String> stationTypeTC;
+	@FXML private TableColumn<Station, String> startTimeTC;
+	//@FXML private TableColumn<Station, String> indexingStatusTC;
+	
+	private final ObservableList<Station> indexingInfo=FXCollections.observableArrayList();
+	private List<Streamer> streamers;
 	
 	protected static float sampleRate; //is in Hz. results in about 20000 freqs. This is also the standard sample rate for WAV files which this app uses
 	protected static int frameSize; //determines the  resolution of the spectrogram = number of hashes generated
@@ -67,6 +88,8 @@ public class IndexingServer extends Application implements Initializable
 	protected static int sampledFrequencies=5; //determines the frequencies to be sampled, if 100 then only frequencies divisible by 100 will be sampled
 	
 	 */
+	//TODO: ability to stop indexing a station
+	//TODO: logs
 	
 	public static void main(String[] args)
 	{
@@ -118,9 +141,10 @@ public class IndexingServer extends Application implements Initializable
 				}
 			}
 			database.close();
-			Streamer streamer=new Streamer(sampleRate, frameSize, hashmapSize, redundantThreshold, startFreq, targetZoneSize, anchor2peakMaxFreqDiff, sampledFrequencies);
+			
+			//Streamer streamer=new Streamer(sampleRate, frameSize, hashmapSize, redundantThreshold, startFreq, targetZoneSize, anchor2peakMaxFreqDiff, sampledFrequencies);
 			launch(args);
-			streamer.startAnalyzing();
+			//streamer.startAnalyzing();
 		} 
 		catch (Exception e)
 		{
@@ -169,6 +193,33 @@ public class IndexingServer extends Application implements Initializable
 		addStationButton.setOnAction(eventHandler);
 		settingsSaveButton.setOnAction(eventHandler);
 		settingsCancelButton.setOnAction(eventHandler);
+		indexingTab.setOnSelectionChanged(new EventHandler<Event>()
+				{
+			
+			@Override
+			public void handle(Event arg0) 
+			{
+				if(indexingTab.isSelected())
+				{
+					initStationComboBox();
+				}
+			}
+		});
+		startIndexingButton.setOnAction(eventHandler);
+		
+		stationInterfaceTC.setCellValueFactory(new PropertyValueFactory<Station, String>("stationInterface"));
+		stationInterfaceTC.setEditable(false);
+		stationTC.setCellValueFactory(new PropertyValueFactory<Station, String>("station"));
+		stationTC.setEditable(false);
+		stationTypeTC.setCellValueFactory(new PropertyValueFactory<Station, String>("type"));
+		stationTypeTC.setEditable(false);
+		startTimeTC.setCellValueFactory(new PropertyValueFactory<Station, String>("startTime"));
+		startTimeTC.setEditable(false);
+		//indexingStatusTC.setCellValueFactory(new PropertyValueFactory<Station, String>("running"));
+		//indexingStatusTC.setEditable(true);
+		
+		indexingTable.setItems(indexingInfo);
+		streamers=new ArrayList<Streamer>();
 	}
 	
 	private void initStationTypeComboBox()
@@ -318,23 +369,36 @@ public class IndexingServer extends Application implements Initializable
 				String stationName=stationNameTF.getText();
 				String stationTypeText=stationTypeComboBox.getValue();
 				String stationInterfaceText=interfaceComboBox.getValue();
-				if(!stationName.equals(null)&&!stationTypeText.equals(null)&&!stationInterfaceText.equals(null))
+				if(stationName!=null&&!stationName.trim().equals("")&&stationTypeText!=null&&stationInterfaceText!=null)
 				{
 					int stationType=-1;
-					if(stationTypeText.equals("TV"))
+					if(stationTypeText.trim().equals("TV"))
 					{
 						stationType=0;
 					}
-					else if(stationTypeText.equals("Radio"))
+					else if(stationTypeText.trim().equals("Radio"))
 					{
 						stationType=1;
 					}
 					ExecutorService executorService=Executors.newFixedThreadPool(1);
-					StationInsertionThread stationInsertionThread=new StationInsertionThread(stationName, stationType, stationInterfaceText);
+					StationInsertionThread stationInsertionThread=new StationInsertionThread(stationName.trim(), stationType, stationInterfaceText.trim());
 					Future<String> future=executorService.submit(stationInsertionThread);
-					stationNameTF.setText(null);
-					stationTypeComboBox.setValue(null);
-					interfaceComboBox.setValue(null);
+					stationNameTF.clear();
+
+					//stationTypeComboBox.setValue(null);
+					//interfaceComboBox.setValue(null);
+				}
+				else if(stationName==null || stationName.trim().equals(""))
+				{
+					stationNameTF.setPromptText("Input the Station's name");
+				}
+				else if(stationTypeText==null)
+				{
+					stationTypeComboBox.setPromptText("Select the Station's type");
+				}
+				else if(stationInterfaceText==null)
+				{
+					interfaceComboBox.setPromptText("Select the Station's interface");
 				}
 			}
 			else if(event.getSource()==settingsSaveButton)
@@ -354,6 +418,62 @@ public class IndexingServer extends Application implements Initializable
 			else if(event.getSource()==settingsCancelButton)
 			{
 				initSettings();
+			}
+			else if(event.getSource()==startIndexingButton)
+			{
+				String selectedStation=stationComboBox.getValue();
+				if(selectedStation!=null)
+				{
+					try
+					{
+						Database database=new Database("broadcast_monitoring", "root", "jason");
+						ResultSet resultSet=database.runSelectQuery("SELECT number, interface, type FROM channel WHERE name = '"+selectedStation+"'");
+						if(resultSet.next())
+						{
+							int stationNumber=resultSet.getInt("number");
+							String stationInterface=resultSet.getString("interface");
+							String stationType="Unknown";
+							Date date=new Date();
+							SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+							sdf.setTimeZone(TimeZone.getTimeZone("gmt"));
+							String timestamp=sdf.format(date)+"( GMT)";
+							if(resultSet.getInt("type")==0)
+							{
+								stationType="TV";
+							}
+							else if(resultSet.getInt("type")==1)
+							{
+								stationType="Radio";
+							}
+							int checkFlag=0;
+							for(int i=0; i<indexingInfo.size(); i++)//check if there is a station currently being indexed with the same interface
+							{
+								if(indexingInfo.get(i).getStationInterface().equals(stationInterface))
+								{
+									checkFlag=1;
+									break;
+								}
+							}
+							if(checkFlag==0)
+							{
+								Station newStation=new Station(selectedStation, stationType, timestamp, stationInterface, stationNumber, true);
+								Streamer streamer=new Streamer(sampleRate, frameSize, hashmapSize, redundantThreshold, startFreq, targetZoneSize, anchor2peakMaxFreqDiff, sampledFrequencies, newStation);
+								indexingInfo.add(newStation);
+								streamer.startAnalyzing();
+								streamers.add(streamer);
+							}
+							else
+							{
+								stationComboBox.setPromptText("Select station with idle interface");
+							}
+						}
+						database.close();
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+				}
 			}
 		}		
 	}

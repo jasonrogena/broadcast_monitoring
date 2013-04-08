@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Scanner;
 import java.util.TimeZone;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -35,8 +36,9 @@ public class Streamer
 	protected Future<String> mplayerFuture;
 	protected ExecutorService mplayerExecutorService;
 	protected String searchableContentURL;
+	protected Station station;
 
-	public Streamer(float sampleRate, int frameSize, int hashmapSize, int redundantThreshold, int startFreq, int targetZoneSize, int anchor2peakMaxFreqDiff, int sampledFrequencies) throws LineUnavailableException
+	public Streamer(float sampleRate, int frameSize, int hashmapSize, int redundantThreshold, int startFreq, int targetZoneSize, int anchor2peakMaxFreqDiff, int sampledFrequencies, Station station) throws LineUnavailableException
 	{
 		this.sampleRate=sampleRate;
 		this.frameSize=frameSize;
@@ -46,6 +48,7 @@ public class Streamer
 		this.targetZoneSize=targetZoneSize;
 		this.anchor2peakMaxFreqDiff=anchor2peakMaxFreqDiff;
 		this.sampledFrequencies=sampledFrequencies;
+		this.station=station;
 		
 		DataLine.Info info=new DataLine.Info(TargetDataLine.class, getFormat());
 		line=(TargetDataLine)AudioSystem.getLine(info);
@@ -96,8 +99,10 @@ public class Streamer
 			}
 			line.open();
 			line.start();
-			Thread thread=new Thread(new StreamingThread());
-			thread.run();
+			ExecutorService executorService=Executors.newFixedThreadPool(1);
+			Future<String> future=executorService.submit(new StreamingThread());
+			//Thread thread=new Thread(new StreamingThread());
+			//thread.run();
 			return true;
 		} 
 		catch (Exception e) 
@@ -108,10 +113,10 @@ public class Streamer
 		return false;
 	}
 	
-	private class StreamingThread implements Runnable 
+	private class StreamingThread implements Callable<String> 
 	{
 		@Override
-		public void run() 
+		public String call() throws Exception
 		{
 			OutputStream out=new ByteArrayOutputStream();
 			byte[] buffer=new byte[frameSize];
@@ -124,10 +129,11 @@ public class Streamer
 			int channelNumber=-1;
 			if(searchableContentID==-1)//called by indexing server
 			{
-				Scanner in=new Scanner(System.in);
-				System.out.println("enter the channel number");
-				channelNumber=in.nextInt();
-				in.close();
+				//Scanner in=new Scanner(System.in);
+				//System.out.println("enter the channel number");
+				//channelNumber=in.nextInt();
+				channelNumber=station.getNumber();
+				//in.close();
 			}
 			int smoothingWidth=101;
 			while(true)
@@ -135,6 +141,11 @@ public class Streamer
 				if(mplayerFuture!=null && mplayerFuture.isDone())
 				{
 					System.out.println("Stopping the hash generation engine...");
+					break;
+				}
+				else if(station!=null && station.isRunning()==false)
+				{
+					System.out.println("Stopping stream on "+station.getStation());
 					break;
 				}
 				int count=line.read(buffer, 0, buffer.length);
@@ -219,6 +230,13 @@ public class Streamer
 					}
 				}
 			}
+			return null;
 		}
+
+		/*@Override
+		public String call() throws Exception {
+			// TODO Auto-generated method stub
+			return null;
+		}*/
 	}
 }
