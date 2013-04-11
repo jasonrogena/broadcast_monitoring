@@ -55,11 +55,10 @@
                 <Button fx:id="startIndexingButton" layoutX="366.0" layoutY="288.0" mnemonicParsing="false" prefHeight="30.0" text="Start Indexing" />
                 <TableView fx:id="indexingTable" layoutX="22.0" layoutY="53.0" prefHeight="206.0" prefWidth="520.0">
                   <columns>
-                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="167.0" text="Station" fx:id="stationTC" />
-                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="78.0" text="Type" fx:id="stationTypeTC" />
+                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="203.0" text="Station" fx:id="stationTC" />
+                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="90.0" text="Type" fx:id="stationTypeTC" />
                     <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="124.0" text="Start Time" fx:id="startTimeTC" />
-                    <TableColumn prefWidth="75.0" text="Interface" fx:id="stationInterfaceTC" />
-                    <TableColumn editable="true" prefWidth="75.0" text="Status" fx:id="indexingStatusTC" />
+                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="101.0" text="Interface" fx:id="stationInterfaceTC" />
                   </columns>
                 </TableView>
               </children>
@@ -158,11 +157,11 @@
             <AnchorPane id="Content" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
               <children>
                 <Label font="$x1" layoutX="86.0" layoutY="13.0" text="Log" />
-                <TableView layoutX="22.0" layoutY="46.0" prefHeight="301.0" prefWidth="520.0">
+                <TableView fx:id="logTable" layoutX="22.0" layoutY="46.0" prefHeight="301.0" prefWidth="520.0">
                   <columns>
-                    <TableColumn prefWidth="75.0" text="Time" />
-                    <TableColumn prefWidth="75.0" text="Tag" />
-                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="370.0" text="Message" />
+                    <TableColumn prefWidth="75.0" text="Time" fx:id="timeTC" />
+                    <TableColumn prefWidth="75.0" text="Tag" fx:id="tagTC" />
+                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="370.0" text="Message" fx:id="messageTC" />
                   </columns>
                 </TableView>
                 <Button layoutX="468.0" layoutY="359.0" mnemonicParsing="false" prefHeight="30.0" text="Clear" />

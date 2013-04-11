@@ -12,6 +12,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import javafx.collections.ObservableList;
+
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
@@ -19,6 +21,8 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
 
 import com.broadcastmonitoring.searching.MPlayerHandler;
+import com.broadcastmonitoring.utils.Log;
+import com.broadcastmonitoring.utils.Time;
 
 public class Streamer
 {
@@ -37,8 +41,9 @@ public class Streamer
 	protected ExecutorService mplayerExecutorService;
 	protected String searchableContentURL;
 	protected Station station;
+	protected final ObservableList<Log> logs;
 
-	public Streamer(float sampleRate, int frameSize, int hashmapSize, int redundantThreshold, int startFreq, int targetZoneSize, int anchor2peakMaxFreqDiff, int sampledFrequencies, Station station) throws LineUnavailableException
+	public Streamer(float sampleRate, int frameSize, int hashmapSize, int redundantThreshold, int startFreq, int targetZoneSize, int anchor2peakMaxFreqDiff, int sampledFrequencies, Station station, ObservableList<Log> logs) throws LineUnavailableException
 	{
 		this.sampleRate=sampleRate;
 		this.frameSize=frameSize;
@@ -49,13 +54,14 @@ public class Streamer
 		this.anchor2peakMaxFreqDiff=anchor2peakMaxFreqDiff;
 		this.sampledFrequencies=sampledFrequencies;
 		this.station=station;
+		this.logs=logs;
 		
 		DataLine.Info info=new DataLine.Info(TargetDataLine.class, getFormat());
 		line=(TargetDataLine)AudioSystem.getLine(info);
 		this.lastTimeValue=getLastTimeValue();
 	}
 	
-	public Streamer(float sampleRate, int frameSize, int hashmapSize, int redundantThreshold, int startFreq, int targetZoneSize, int anchor2peakMaxFreqDiff, int sampledFrequencies, int searchableContentID, String searchableContentURL) throws LineUnavailableException
+	public Streamer(float sampleRate, int frameSize, int hashmapSize, int redundantThreshold, int startFreq, int targetZoneSize, int anchor2peakMaxFreqDiff, int sampledFrequencies, int searchableContentID, String searchableContentURL, ObservableList<Log> logs) throws LineUnavailableException
 	{
 		this.sampleRate=sampleRate;
 		this.frameSize=frameSize;
@@ -67,6 +73,9 @@ public class Streamer
 		this.sampledFrequencies=sampledFrequencies;
 		this.searchableContentID=searchableContentID;
 		this.searchableContentURL=searchableContentURL;
+		this.logs=logs;
+		
+		
 		
 		DataLine.Info info=new DataLine.Info(TargetDataLine.class, getFormat());
 		line=(TargetDataLine)AudioSystem.getLine(info);
@@ -105,9 +114,9 @@ public class Streamer
 			//thread.run();
 			return true;
 		} 
-		catch (Exception e) 
+		catch (LineUnavailableException e)
 		{
-			System.err.println("****Exception thrown****");
+			logs.add(new Log(Time.getTime("gmt"), "ERROR", "Streamer.java: LineUnavailableException thrown while trying to start analyzing input stream"));
 			e.printStackTrace();
 		}
 		return false;
@@ -140,12 +149,12 @@ public class Streamer
 			{
 				if(mplayerFuture!=null && mplayerFuture.isDone())
 				{
-					System.out.println("Stopping the hash generation engine...");
+					logs.add(new Log(Time.getTime("gmt"), "INFO", "Streamer.java: Stopping the hash generation engine"));
 					break;
 				}
 				else if(station!=null && station.isRunning()==false)
 				{
-					System.out.println("Stopping stream on "+station.getStation());
+					logs.add(new Log(Time.getTime("gmt"), "INFO", "Stopping stream on "+station.getStation()));
 					break;
 				}
 				int count=line.read(buffer, 0, buffer.length);
@@ -201,7 +210,7 @@ public class Streamer
 					} 
 					catch (IOException e)
 					{
-						System.err.println("****unable to write to output stream****");
+						logs.add(new Log(Time.getTime("gmt"), "ERROR", "Streamer.java: Unable to write to output stream"));
 						e.printStackTrace();
 					}
 					finally
@@ -212,7 +221,7 @@ public class Streamer
 						} 
 						catch (Exception e) 
 						{
-							System.err.println("****unable to close output stream****");
+							logs.add(new Log(Time.getTime("gmt"), "ERROR", "Streamer.java: Unable to close output stream"));
 							e.printStackTrace();
 						}
 					}
@@ -222,11 +231,11 @@ public class Streamer
 				{
 					if(count<=0)
 					{
-						System.err.println("****The targetDataLine is not streaming any data****\n# Streamer.java #");
+						logs.add(new Log(Time.getTime("gmt"), "ERROR", "Streamer.java: The targetDataLine is not streaming any data"));
 					}
 					if(frameCount>frameBuffer.length)
 					{
-						System.err.println("****The number of frames has just exceeded what the frameBuffer can handle****\n# Streamer.java #");
+						logs.add(new Log(Time.getTime("gmt"), "ERROR", "Streamer.java: The number of frames has just exceeded what the frameBuffer can handle"));
 					}
 				}
 			}

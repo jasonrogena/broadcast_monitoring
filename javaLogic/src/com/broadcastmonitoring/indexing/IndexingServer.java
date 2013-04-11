@@ -37,6 +37,8 @@ import javafx.stage.WindowEvent;
 
 import javax.sound.sampled.LineUnavailableException;
 import com.broadcastmonitoring.database.Database;
+import com.broadcastmonitoring.utils.Log;
+import com.broadcastmonitoring.utils.Time;
 
 public class IndexingServer extends Application implements Initializable
 {
@@ -63,10 +65,16 @@ public class IndexingServer extends Application implements Initializable
 	@FXML private TableColumn<Station, String> stationTC;
 	@FXML private TableColumn<Station, String> stationTypeTC;
 	@FXML private TableColumn<Station, String> startTimeTC;
+	@FXML private TableView<Log> logTable;
+	@FXML private TableColumn<Log, String> timeTC;
+	@FXML private TableColumn<Log, String> tagTC;
+	@FXML private TableColumn<Log, String> messageTC;
+	@FXML private Button clearLogButton;
 	//@FXML private TableColumn<Station, String> indexingStatusTC;
 	
 	private final ObservableList<Station> indexingInfo=FXCollections.observableArrayList();
 	private List<Streamer> streamers;
+	private static final ObservableList<Log> logs=FXCollections.observableArrayList();
 	
 	protected static float sampleRate; //is in Hz. results in about 20000 freqs. This is also the standard sample rate for WAV files which this app uses
 	protected static int frameSize; //determines the  resolution of the spectrogram = number of hashes generated
@@ -89,55 +97,55 @@ public class IndexingServer extends Application implements Initializable
 	
 	 */
 	//TODO: ability to stop indexing a station
-	//TODO: logs
+	//TODO: ability to choose which input to use
 	
 	public static void main(String[] args)
 	{
 		try
 		{
 			Database database=new Database("broadcast_monitoring", "root", "jason");
-			ResultSet resultSet=database.runSelectQuery("SELECT name,value FROM variables WHERE type = 0");
+			ResultSet resultSet=database.runSelectQuery("SELECT name,value FROM variables WHERE type = 0 OR type = 2");
 			while(resultSet.next())
 			{
 				if(resultSet.getString("name").equals("sampleRate"))
 				{
 					sampleRate=resultSet.getFloat("value");
-					System.out.println("sampleRate="+sampleRate);
+					logs.add(new Log(Time.getTime("gmt"), "INFO", "sampleRate initialized to "+String.valueOf(sampleRate)));
 				}
 				else if(resultSet.getString("name").equals("frameSize"))
 				{
 					frameSize=resultSet.getInt("value");
-					System.out.println("frameSize="+frameSize);
+					logs.add(new Log(Time.getTime("gmt"), "INFO", "frameSize initialized to "+String.valueOf(frameSize)));
 				}
 				else if(resultSet.getString("name").equals("hashmapSize"))
 				{
 					hashmapSize=resultSet.getInt("value");
-					System.out.println("hashmapSize="+hashmapSize);
+					logs.add(new Log(Time.getTime("gmt"), "INFO", "hashmapSize initialized to "+String.valueOf(hashmapSize)));
 				}
 				else if(resultSet.getString("name").equals("redundantThreshold"))
 				{
 					redundantThreshold=resultSet.getInt("value");
-					System.out.println("redundantThreshold="+redundantThreshold);
+					logs.add(new Log(Time.getTime("gmt"), "INFO", "redundantThreshold initialized to "+String.valueOf(redundantThreshold)));
 				}
 				else if(resultSet.getString("name").equals("startFreq"))
 				{
 					startFreq=resultSet.getInt("value");
-					System.out.println("startFreq="+startFreq);
+					logs.add(new Log(Time.getTime("gmt"), "INFO", "startFreq initialized to "+String.valueOf(startFreq)));
 				}
 				else if(resultSet.getString("name").equals("targetZoneSize"))
 				{
 					targetZoneSize=resultSet.getInt("value");
-					System.out.println("targetZoneSize="+targetZoneSize);
+					logs.add(new Log(Time.getTime("gmt"), "INFO", "targetZoneSize initialized to "+String.valueOf(targetZoneSize)));
 				}
 				else if(resultSet.getString("name").equals("anchor2peakMaxFreqDiff"))
 				{
 					anchor2peakMaxFreqDiff=resultSet.getInt("value");
-					System.out.println("anchor2peakMaxFreqDiff="+anchor2peakMaxFreqDiff);
+					logs.add(new Log(Time.getTime("gmt"), "INFO", "anchor2peakMaxFreqDiff initialized to "+String.valueOf(anchor2peakMaxFreqDiff)));
 				}
 				else if(resultSet.getString("name").equals("sampledFrequencies"))
 				{
 					sampledFrequencies=resultSet.getInt("value");
-					System.out.println("sampledFrequencies="+sampledFrequencies);
+					logs.add(new Log(Time.getTime("gmt"), "INFO", "sampledFrequencies initialized to "+String.valueOf(sampledFrequencies)));
 				}
 			}
 			database.close();
@@ -179,6 +187,7 @@ public class IndexingServer extends Application implements Initializable
 		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			logs.add(new Log(Time.getTime("gmt"), "ERROR", "IndexingServer.java: IOException thrown while trying to get the indexing_server.fxml resource"));
 		}
 	}
 
@@ -220,6 +229,17 @@ public class IndexingServer extends Application implements Initializable
 		
 		indexingTable.setItems(indexingInfo);
 		streamers=new ArrayList<Streamer>();
+		
+		timeTC.setCellValueFactory(new PropertyValueFactory<Log, String>("time"));
+		timeTC.setEditable(false);
+		tagTC.setCellValueFactory(new PropertyValueFactory<Log, String>("tag"));
+		tagTC.setEditable(false);
+		messageTC.setCellValueFactory(new PropertyValueFactory<Log, String>("message"));
+		messageTC.setEditable(false);
+		
+		logTable.setItems(logs);
+		
+		clearLogButton.setOnAction(eventHandler);
 	}
 	
 	private void initStationTypeComboBox()
@@ -335,22 +355,37 @@ public class IndexingServer extends Application implements Initializable
 		public String call() throws Exception 
 		{
 			Database database=new Database("broadcast_monitoring", "root", "jason");
-			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newSampleRate)+" WHERE name = 'sampleRate' AND type = 0");
+			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newSampleRate)+" WHERE name = 'sampleRate' AND ( type = 0 OR type = 2 )");
 			sampleRate=newSampleRate;
-			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newAnchor2PeakMaxFreqDiff)+" WHERE name = 'anchor2peakMaxFreqDiff' AND type = 0");
+			logs.add(new Log(Time.getTime("gmt"), "INFO", "Value of sampleRate updated to "+String.valueOf(sampleRate)));
+			
+			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newAnchor2PeakMaxFreqDiff)+" WHERE name = 'anchor2peakMaxFreqDiff' AND ( type = 0 OR type = 2 )");
 			anchor2peakMaxFreqDiff=newAnchor2PeakMaxFreqDiff;
-			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newFrameSize)+" WHERE name = 'frameSize' AND type = 0");
+			logs.add(new Log(Time.getTime("gmt"), "INFO", "Value of anchor2peakMaxFreqDiff updated to "+String.valueOf(anchor2peakMaxFreqDiff)));
+			
+			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newFrameSize)+" WHERE name = 'frameSize' AND ( type = 0 OR type = 2 )");
 			frameSize=newFrameSize;
-			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newHashMapSize)+" WHERE name = 'hashmapSize' AND type = 0");
+			logs.add(new Log(Time.getTime("gmt"), "INFO", "Value of frameSize updated to "+String.valueOf(frameSize)));
+			
+			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newHashMapSize)+" WHERE name = 'hashmapSize' AND ( type = 0 OR type = 2 )");
 			hashmapSize=newHashMapSize;
-			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newRedundantThreshold)+" WHERE name = 'redundantThreshold' AND type = 0");
+			logs.add(new Log(Time.getTime("gmt"), "INFO", "Value of hashmapSize updated to "+String.valueOf(hashmapSize)));
+			
+			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newRedundantThreshold)+" WHERE name = 'redundantThreshold' AND ( type = 0 OR type = 2 )");
 			redundantThreshold=newRedundantThreshold;
-			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newBaseForSampledFreq)+" WHERE name = 'sampledFrequencies' AND type = 0");
+			logs.add(new Log(Time.getTime("gmt"), "INFO", "Value of redundantThreshold updated to "+String.valueOf(redundantThreshold)));
+			
+			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newBaseForSampledFreq)+" WHERE name = 'sampledFrequencies' AND ( type = 0 OR type = 2 )");
 			sampledFrequencies=newBaseForSampledFreq;
-			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newHighPassFilter)+" WHERE name = 'startFreq' AND type = 0");
+			logs.add(new Log(Time.getTime("gmt"), "INFO", "Value of sampledFrequencies updated to "+String.valueOf(sampledFrequencies)));
+			
+			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newHighPassFilter)+" WHERE name = 'startFreq' AND ( type = 0 OR type = 2 )");
 			startFreq=newHighPassFilter;
-			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newTargetZoneSize)+" WHERE name = 'targetZoneSize' AND type = 0");
+			logs.add(new Log(Time.getTime("gmt"), "INFO", "Value of startFreq updated to "+String.valueOf(startFreq)));
+			
+			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newTargetZoneSize)+" WHERE name = 'targetZoneSize' AND ( type = 0 OR type = 2 )");
 			targetZoneSize=newTargetZoneSize;
+			logs.add(new Log(Time.getTime("gmt"), "INFO", "Value of targetZoneSize updated to "+String.valueOf(targetZoneSize)));
 			
 			database.close();
 			return null;
@@ -433,10 +468,7 @@ public class IndexingServer extends Application implements Initializable
 							int stationNumber=resultSet.getInt("number");
 							String stationInterface=resultSet.getString("interface");
 							String stationType="Unknown";
-							Date date=new Date();
-							SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-							sdf.setTimeZone(TimeZone.getTimeZone("gmt"));
-							String timestamp=sdf.format(date)+"( GMT)";
+							
 							if(resultSet.getInt("type")==0)
 							{
 								stationType="TV";
@@ -456,8 +488,8 @@ public class IndexingServer extends Application implements Initializable
 							}
 							if(checkFlag==0)
 							{
-								Station newStation=new Station(selectedStation, stationType, timestamp, stationInterface, stationNumber, true);
-								Streamer streamer=new Streamer(sampleRate, frameSize, hashmapSize, redundantThreshold, startFreq, targetZoneSize, anchor2peakMaxFreqDiff, sampledFrequencies, newStation);
+								Station newStation=new Station(selectedStation, stationType, Time.getTime("gmt"), stationInterface, stationNumber, true);
+								Streamer streamer=new Streamer(sampleRate, frameSize, hashmapSize, redundantThreshold, startFreq, targetZoneSize, anchor2peakMaxFreqDiff, sampledFrequencies, newStation, logs);
 								indexingInfo.add(newStation);
 								streamer.startAnalyzing();
 								streamers.add(streamer);
@@ -474,6 +506,10 @@ public class IndexingServer extends Application implements Initializable
 						e.printStackTrace();
 					}
 				}
+			}
+			else if(event.getSource()==clearLogButton)
+			{
+				logs.clear();
 			}
 		}		
 	}
