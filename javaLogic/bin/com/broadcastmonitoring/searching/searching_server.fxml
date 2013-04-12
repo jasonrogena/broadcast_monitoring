@@ -15,34 +15,7 @@
       <tabs>
         <Tab text="Search">
           <content>
-            <AnchorPane id="Content" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
-              <children>
-                <Label layoutX="86.0" layoutY="13.0" text="Search">
-                  <font>
-                    <Font size="18.0" fx:id="x3" />
-                  </font>
-                </Label>
-                <VBox layoutX="47.0" layoutY="67.0" prefHeight="208.0" prefWidth="470.0">
-                  <children>
-                    <Label text="Name of the searchable content">
-                      <VBox.margin>
-                        <Insets bottom="7.0" fx:id="x1" />
-                      </VBox.margin>
-                    </Label>
-                    <TextField prefHeight="30.0" prefWidth="470.0">
-                      <VBox.margin>
-                        <Insets bottom="15.0" fx:id="x2" />
-                      </VBox.margin>
-                    </TextField>
-                    <Label text="Location" VBox.margin="$x1" />
-                    <TextField prefHeight="30.0" prefWidth="200.0" VBox.margin="$x2" />
-                    <Label text="Station to search" VBox.margin="$x1" />
-                    <ComboBox fx:id="stationToSearchCB" prefHeight="30.0" prefWidth="353.0" />
-                  </children>
-                </VBox>
-                <Button layoutX="410.0" layoutY="310.0" mnemonicParsing="false" prefHeight="30.0" text="Search" />
-              </children>
-            </AnchorPane>
+            <AnchorPane id="Content" fx:id="searchTabAnchorPane" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
           </content>
         </Tab>
         <Tab text="History">
@@ -59,7 +32,11 @@
                     <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="119.0" text="[HBF*(10^7)]/CD" />
                   </columns>
                 </TableView>
-                <Label font="$x3" layoutX="86.0" layoutY="13.0" text="History" />
+                <Label layoutX="86.0" layoutY="13.0" text="History">
+                  <font>
+                    <Font size="18.0" fx:id="x3" />
+                  </font>
+                </Label>
               </children>
             </AnchorPane>
           </content>

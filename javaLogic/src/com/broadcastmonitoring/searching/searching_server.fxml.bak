@@ -37,7 +37,7 @@
                     <Label text="Location" VBox.margin="$x1" />
                     <TextField prefHeight="30.0" prefWidth="200.0" VBox.margin="$x2" />
                     <Label text="Station to search" VBox.margin="$x1" />
-                    <ComboBox prefHeight="30.0" prefWidth="353.0" />
+                    <ComboBox fx:id="stationToSearchCB" prefHeight="30.0" prefWidth="353.0" />
                   </children>
                 </VBox>
                 <Button layoutX="410.0" layoutY="310.0" mnemonicParsing="false" prefHeight="30.0" text="Search" />
