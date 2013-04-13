@@ -21,6 +21,7 @@ import java.util.TreeSet;
 
 import javax.swing.JFrame;
 
+import com.broadcastmonitoring.database.Database;
 import com.broadcastmonitoring.indexing.Hash;
 
 public class HashSetGroup
@@ -37,9 +38,16 @@ public class HashSetGroup
 	private ITrace2D trace;
 	private long comparisonsDone;
 	private long matches;
+	private int parent;
+	private int channel;
+	private String channelStartTime; 
+	private String channelStopTime; 
+	private String scStartTime;
+	private String scStopTime;
 	
 	
-	public HashSetGroup(List<String> hashSetUrls, List<Hash> advertHashes, String dir)
+	
+	public HashSetGroup(List<String> hashSetUrls, List<Hash> advertHashes, String dir, int parent, int channel, String channelStartTime, String channelStopTime, String scStartTime, String scStopTime)
 	{
 		this.hashSetUrls=hashSetUrls;
 		this.advertHashes=advertHashes;
@@ -52,6 +60,12 @@ public class HashSetGroup
 		comparisonsDone=0;
 		matches=0;
 		//initChart();
+		this.parent=parent;
+		this.channel=channel;
+		this.channelStartTime=channelStartTime;
+		this.channelStopTime=channelStopTime;
+		this.scStartTime=scStartTime;
+		this.scStopTime=scStopTime;
 	}
 	
 	private void initChart()
@@ -319,12 +333,14 @@ public class HashSetGroup
 				}
 			}
 			System.out.println("\n largest frequency = "+largestFrequency);
-			long a=largestFrequency*10000000;
-			a=a/comparisonsDone;
+			long probabilityRatio=largestFrequency*10000000;
+			probabilityRatio=probabilityRatio/comparisonsDone;
 			long b=largestFrequency*10000;
 			b=b/matches;
-			System.out.println(comparisonsDone+" comparisons done. Ratio btwn largest freq & comparisons done = "+a);
+			System.out.println(comparisonsDone+" comparisons done. Ratio btwn largest freq & comparisons done = "+probabilityRatio);
 			System.out.println(matches+" - total matches. Ratio btwn largest freq & total matches = "+b);
+			
+			addToDatabase(this.parent, this.channel, this.channelStartTime, this.channelStopTime, this.scStartTime, this.scStopTime, largestFrequency, probabilityRatio);
 			/*try {
 				Thread.sleep(10000);
 			} catch (InterruptedException e) {
@@ -337,5 +353,22 @@ public class HashSetGroup
 			System.err.println("****none of the hashes from the advert and the channel appear to match****\n# HashSetGroup.java #");
 		}
 		
+	}
+	
+	private void addToDatabase(int parent, int channel, String channelStartTime, String channelStopTime, String scStartTime, String scStopTime, long largestBinFreq, long probabilityRatio)
+	{
+		Database database=new Database("broadcast_monitoring", "root", "jason");
+		database.initInsertStatement("INSERT INTO `search_result` (parent, channel, `channel_start_time`, `channel_stop_time`, `sc_start_time`, `sc_stop_time`, `largest_bin_freq`, `probability_ratio`) VALUES (?,?,?,?,?,?,?,?)");
+		database.addColumnValue(parent);
+		database.addColumnValue(channel);
+		database.addColumnValue(channelStartTime);
+		database.addColumnValue(channelStopTime);
+		database.addColumnValue(scStartTime);
+		database.addColumnValue(scStopTime);
+		database.addColumnValue(largestBinFreq);
+		database.addColumnValue(probabilityRatio);
+		database.executeInsert();
+		
+		database.close();
 	}
 }

@@ -11,8 +11,10 @@ import java.io.ObjectInputStream;
 import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -36,6 +38,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.control.ComboBox;
@@ -45,8 +48,13 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
+import javafx.stage.FileChooser;
+import javafx.stage.FileChooser.ExtensionFilter;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
@@ -60,6 +68,7 @@ import com.broadcastmonitoring.indexing.Frame;
 import com.broadcastmonitoring.indexing.Hash;
 import com.broadcastmonitoring.indexing.HashMap;
 import com.broadcastmonitoring.indexing.Streamer;
+import com.broadcastmonitoring.utils.Int;
 import com.broadcastmonitoring.utils.Log;
 import com.broadcastmonitoring.utils.StreamGobbler;
 import com.broadcastmonitoring.utils.Time;
@@ -97,7 +106,13 @@ public class SearchingServer extends Application implements Initializable
 	private ComboBox<String> stationToSearchCB;
 	private Button searchButton;
 	private TextField searchableContentNameTF;
-	private TextField searchableContentLocationTF;
+	private Button fileChooserButton;
+	private Stage popup;
+	private Node timelineNode;
+	private Label timelineNodeLabel;
+	private HBox timelineHBox;
+	private TextField thresholdTF;
+	private Button startStopButton;
 	
 	private static final ObservableList<Log> logs=FXCollections.observableArrayList();
 	
@@ -130,6 +145,8 @@ public class SearchingServer extends Application implements Initializable
 	private static final String hashDir="../bin/hashes";
 	
 	private int stopSearchFlag=0;
+	private int startSearchFlag=0;
+	private double timelineTime=20;
 	
 	public static void main(String[] args)
 	{
@@ -294,6 +311,81 @@ public class SearchingServer extends Application implements Initializable
 		}
 	}
 	
+	private void initTimelineNode()
+	{
+		
+		try 
+		{
+			startSearchFlag=0;
+			stopSearchFlag=0;
+			searchTabAnchorPane.getChildren().clear();
+			timelineNode=FXMLLoader.load(getClass().getResource("timeline_node.fxml"));
+			searchTabAnchorPane.getChildren().addAll(timelineNode);
+			
+			initTimelineNodeLabel();
+			initTimelineHBox();
+			initThresholdTF();
+			initStartStopButton();
+		} 
+		catch (IOException e) 
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logs.add(new Log(Time.getTime("gmt"), "ERROR", "IOException thrown while trying to load timeline_node.fxml"));
+		}
+		
+	}
+	
+	private void initTimelineNodeLabel()
+	{
+		if(timelineNode!=null)
+		{
+			timelineNodeLabel=(Label)timelineNode.lookup("#timelineNodeLabel");
+		}
+		else
+		{
+			logs.add(new Log(Time.getTime("gmt"), "ERROR", "timelineNode is null therefore it's child timelineNodeLabel cannot be located"));
+		}
+	}
+	
+	private void initTimelineHBox()
+	{
+		if(timelineNode!=null)
+		{
+			timelineHBox=(HBox)timelineNode.lookup("#timelineHBox");
+		}
+		else
+		{
+			logs.add(new Log(Time.getTime("gmt"), "ERROR", "timelineNode is null therefore it's child timelineHBox cannot be located"));
+		}
+	}
+	
+	private void initThresholdTF()
+	{
+		if(timelineNode!=null)
+		{
+			thresholdTF=(TextField)timelineNode.lookup("#thresholdTF");
+		}
+		else
+		{
+			logs.add(new Log(Time.getTime("gmt"), "ERROR", "timelineNode is null therefore it's child thresholdTF cannot be located"));
+		}
+	}
+	
+	private void initStartStopButton()
+	{
+		if(timelineNode!=null)
+		{
+			startStopButton=(Button)timelineNode.lookup("#startStopButton");
+			startStopButton.setText("Start");
+			startStopButton.setOnAction(new MyEventHandler());
+		}
+		else
+		{
+			logs.add(new Log(Time.getTime("gmt"), "ERROR", "timelineNode is null therefore it's child startStopButton cannot be located"));
+		}
+	}
+	
 	private void initSearchNode()
 	{
 		try 
@@ -307,7 +399,7 @@ public class SearchingServer extends Application implements Initializable
 			initStationToSearchCB();
 			initSearchButton();
 			initSearchableContentNameTF();
-			initSearchableContentLocationTF();
+			initFileChooserButton();
 		} 
 		catch (IOException e)
 		{
@@ -327,15 +419,17 @@ public class SearchingServer extends Application implements Initializable
 			logs.add(new Log(Time.getTime("gmt"), "ERROR", "searchNode is null therefore it's child searchableContentNameTF cannot be located"));
 		}
 	}
-	private void initSearchableContentLocationTF()
+	
+	private void initFileChooserButton()
 	{
 		if(searchNode!=null)
 		{
-			searchableContentLocationTF=(TextField)searchNode.lookup("#searchableContentLocationTF");
+			fileChooserButton=(Button)searchNode.lookup("#fileChooserButton");
+			fileChooserButton.setOnAction(new MyEventHandler());
 		}
 		else
 		{
-			logs.add(new Log(Time.getTime("gmt"), "ERROR", "searchNode is null therefore it's child searchableContentLocationTF cannot be located"));
+			logs.add(new Log(Time.getTime("gmt"), "ERROR", "searchNode is null therefore it's child fileChooserButton cannot be located"));
 		}
 	}
 	
@@ -366,6 +460,52 @@ public class SearchingServer extends Application implements Initializable
 		{
 			logs.add(new Log(Time.getTime("gmt"), "ERROR", "searchNode is null therefore it's child stationToSearchCB cannot be located"));
 		}
+	}
+	
+	private class TimelineHandler implements Callable<String>
+	{
+
+		@Override
+		public String call() throws Exception
+		{
+			double timelineWidth=timelineHBox.getWidth();
+			double timelineRatio=timelineWidth/timelineTime;
+			
+			timelineHBox.getChildren().clear();
+			
+			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			dateFormat.setTimeZone(TimeZone.getTimeZone("gmt"));
+			Calendar cal = Calendar.getInstance();
+			System.out.println("Check  dfdfdafskjdfsfads "+Int.safeLongToInt(Math.round(-1*timelineTime)));
+			cal.add(Calendar.MINUTE, Int.safeLongToInt(Math.round(-1*timelineTime)));
+			String before=dateFormat.format(cal.getTime());
+			
+			Database database=new Database("broadcast_monitoring", "root", "jason");
+			ResultSet resultSet=database.runSelectQuery("SELECT * FROM `search_result` WHERE `channel_start_time` > '"+before+"' ORDER BY `channel_start_time` ASC");
+			while(resultSet.next())
+			{
+				Date channelStartTime=resultSet.getDate("channel_start_time");
+				Date channelStopTime=resultSet.getDate("channel_stop_time");
+				double td=(double)(channelStopTime.getTime()-channelStartTime.getTime());
+				double timeDifference=td/60000;//time difference in minutes
+				double width=timeDifference*timelineRatio;
+				int probabilityRatio=resultSet.getInt("probability_ratio");
+				int yCoeficient=probabilityRatio-Integer.parseInt(thresholdTF.getText());
+				if(yCoeficient<1)
+				{
+					yCoeficient=1;
+				}
+				double height=(double)(yCoeficient);
+				Rectangle rect=new Rectangle();
+				rect.setWidth(width);
+				rect.setHeight(height);
+				
+				timelineHBox.getChildren().add(rect);
+				
+			}
+			return null;
+		}
+		
 	}
 	
 	private class StationHandler implements Callable<String>
@@ -451,17 +591,66 @@ public class SearchingServer extends Application implements Initializable
 			else if(event.getSource()==searchButton)
 			{
 				String searchableContentName=searchableContentNameTF.getText().trim();
-				String searchableContentLocation=searchableContentLocationTF.getText().trim();
+				String searchableContentLocation=null;
+				if(!fileChooserButton.getText().trim().equals("Choose the File"))
+				{
+					searchableContentLocation=fileChooserButton.getText().trim();
+				}
 				String stationToSearch=stationToSearchCB.getValue();
 				searchButton.setDisable(true);
 				
+				initTimelineNode();
+				timelineNodeLabel.setText(searchableContentName+" on "+stationToSearch);
+				
 				ExecutorService executorService=Executors.newFixedThreadPool(1);
-				SearchHandler searchHandler=new SearchHandler(searchableContentName, searchableContentLocation, stationToSearch);
+				SearchHandler searchHandler=new SearchHandler(searchableContentName, searchableContentLocation, stationToSearch,initStatusPopup());
 				Future<Integer> future=executorService.submit(searchHandler);
+			}
+			else if(event.getSource()==fileChooserButton)
+			{
+				FileChooser fileChooser=new FileChooser();
+				ExtensionFilter wavExtensionFilter=new ExtensionFilter("WAV files (*.wav)","*.wav");
+				fileChooser.getExtensionFilters().add(wavExtensionFilter);
+				File selectedFile=fileChooser.showOpenDialog(null);
+				try
+				{
+					fileChooserButton.setText(selectedFile.getCanonicalPath());
+				} 
+				catch (IOException e)
+				{
+					logs.add(new Log(Time.getTime("gmt"), "ERROR", "SearchingServer.java: IOException thrown while trying to get the canonical path of selected file"));
+					e.printStackTrace();
+				}
+				
+			}
+			else if(event.getSource()==startStopButton)
+			{
+				if(startSearchFlag==0 && stopSearchFlag==0)//initial, user probably wants to start search
+				{
+					startStopButton.setText("Stop");
+					startSearchFlag=1;
+				}
+				else if(startSearchFlag==1 && stopSearchFlag==0)
+				{
+					stopSearchFlag=1;
+					initSearchNode();
+				}
 			}
 			
 		}
 		
+	}
+	
+	private Text initStatusPopup()
+	{
+		popup=new Stage(StageStyle.UTILITY);
+		popup.initModality(Modality.APPLICATION_MODAL);
+		StackPane popupLayout=new StackPane();
+		Text message=new Text();
+		popupLayout.getChildren().add(message);
+		popup.setScene(new Scene(popupLayout, 300, 50));
+		popup.show();
+		return message;
 	}
 	
 	private class SettingsUpdateThread implements Callable<String>
@@ -561,39 +750,42 @@ public class SearchingServer extends Application implements Initializable
 		private String searchableContentName;
 		private String searchableContentUrl;
 		private String channel;
-		private Stage popup;
-		private StackPane popupLayout;
 		private Text message;
+		private String scStartTime;
+		private String scStopTime;
 		
-		public SearchHandler(String searchableContentName, String searchableContentUrl, String channel)
+		
+		public SearchHandler(String searchableContentName, String searchableContentUrl, String channel, Text message)
 		{
 			this.searchableContentName=searchableContentName;
 			this.searchableContentUrl=searchableContentUrl;
 			this.channel=channel;
-			
-			popup=new Stage(StageStyle.UTILITY);
-			popupLayout=new StackPane();
-			popupLayout.getChildren().add(message);
-			popup.setScene(new Scene(popupLayout, 50, 300));
+			this.message=message;
+			logs.add(new Log(Time.getTime("gmt"), "INFO", "Initializing SearchHandler"));
 		}
 		@Override
 		public Integer call() throws Exception 
 		{
-			popup.show();
 			message.setText("Adding Searchable Content to Database");
 			int searchableContentID=addSearchableContentToDB(searchableContentName);
 			message.setText("Generating Hashes from Searchable Content");
 			generateHashes(searchableContentUrl, searchableContentID,smoothingWidth);
 			List<Hash> key=getKeyPiece(hashSetGroupSize, searchableContentID,hashDir,limitKeyPieceSize,keyPieceMultiplier);
 			int channelNumber=getChannelNumber(channel);
-			
-			popup.close();
-			
+			popup=null;
+			System.out.println("waiting for user");
+			Database database=new Database("broadcast_monitoring", "root", "jason");
 			while(stopSearchFlag==0)
 			{
-				searchKeyInChannel(searchableContentID,channelNumber,hashSetGroupSize,key,hashDir);
+				if(startSearchFlag==1)
+				{
+					System.out.println("Starting the search");
+					logs.add(new Log(Time.getTime("gmt"), "INFO", "Starting the search"));
+					searchKeyInChannel(searchableContentID,channelNumber,hashSetGroupSize,key,hashDir,database);
+				}
 			}
-			
+
+			database.close();
 			return null;
 		}
 		
@@ -680,11 +872,11 @@ public class SearchingServer extends Application implements Initializable
 			ResultSet fetchedHashSetUrls;
 			if(limit==true)
 			{
-				fetchedHashSetUrls=database.runSelectQuery("SELECT url FROM `hash_set` WHERE parent = "+String.valueOf(id)+" AND `parent_type` = 1 ORDER BY `start_real_time` ASC LIMIT "+String.valueOf(keyPieceSize));
+				fetchedHashSetUrls=database.runSelectQuery("SELECT url,`start_timestamp`,`stop_timestamp` FROM `hash_set` WHERE parent = "+String.valueOf(id)+" AND `parent_type` = 1 ORDER BY `start_real_time` ASC LIMIT "+String.valueOf(keyPieceSize));
 			}
 			else
 			{
-				fetchedHashSetUrls=database.runSelectQuery("SELECT url FROM `hash_set` WHERE parent = "+String.valueOf(id)+" AND `parent_type` = 1 ORDER BY `start_real_time` ASC");
+				fetchedHashSetUrls=database.runSelectQuery("SELECT url,`start_timestamp`,`stop_timestamp` FROM `hash_set` WHERE parent = "+String.valueOf(id)+" AND `parent_type` = 1 ORDER BY `start_real_time` ASC");
 			}
 			
 			/*the above query selects the first hashSets of the searchable content
@@ -695,6 +887,14 @@ public class SearchingServer extends Application implements Initializable
 				{
 					while(fetchedHashSetUrls.next())
 					{
+						if(fetchedHashSetUrls.isFirst())//first hash set
+						{
+							scStartTime=fetchedHashSetUrls.getString("start_timestamp");
+						}
+						if(fetchedHashSetUrls.isLast())
+						{
+							scStopTime=fetchedHashSetUrls.getString("stop_timestamp");
+						}
 						InputStream hashSetSerFile=new FileInputStream(hashDir+"/"+fetchedHashSetUrls.getString(1));
 						InputStream buffer=new BufferedInputStream(hashSetSerFile);
 						ObjectInput objectInput=new ObjectInputStream(buffer);
@@ -734,6 +934,7 @@ public class SearchingServer extends Application implements Initializable
 				{
 					int id=resultSet.getInt("number");
 					database.close();
+					logs.add(new Log(Time.getTime("gmt"), "INFO", "Channel number = "+id));
 					return id;
 				}
 			} 
@@ -746,10 +947,9 @@ public class SearchingServer extends Application implements Initializable
 			return -1;
 		}
 		
-		private void searchKeyInChannel(int id, int channel, int hashSetGroupSize, List<Hash> key, String hashDir)
+		private void searchKeyInChannel(int id, int channel, int hashSetGroupSize, List<Hash> key, String hashDir, Database database)
 		{
 			//get search pointer from database
-			Database database=new Database("broadcast_monitoring", "root", "jason");
 			ResultSet resultSet=database.runSelectQuery("SELECT `last_start_real_time` FROM `search_pointer` WHERE parent = "+String.valueOf(id)+" AND channel = "+String.valueOf(channel));
 			if(resultSet!=null)
 			{
@@ -780,7 +980,7 @@ public class SearchingServer extends Application implements Initializable
 					}
 					
 					//check if the first hashSets after the pointer can form a hashSetGroup
-					ResultSet fetchedNumberOfHashSets=database.runSelectQuery("SELECT COUNT(id) FROM `hash_set` WHERE parent = "+String.valueOf(channel)+" AND `parent_type` = 0 AND `start_real_time` > "+String.valueOf(lastStartRealTime)+" ORDER BY `start_real_time` ASC");
+					ResultSet fetchedNumberOfHashSets=database.runSelectQuery("SELECT count(id) FROM `hash_set` WHERE parent = "+String.valueOf(channel)+" AND `parent_type` = 0 AND `start_real_time` > "+String.valueOf(lastStartRealTime)+" ORDER BY `start_real_time` ASC");
 					if(fetchedNumberOfHashSets!=null)
 					{
 						if(fetchedNumberOfHashSets.next())
@@ -791,15 +991,21 @@ public class SearchingServer extends Application implements Initializable
 							if(numberofHashSets>=hashSetGroupSize)//hash sets can form a group
 							{
 								//fetch
-								ResultSet fetchedChannelHashUrls=database.runSelectQuery("SELECT url,`start_real_time` FROM `hash_set` WHERE parent = "+String.valueOf(channel)+" AND `parent_type` = 0 AND `start_real_time` > "+String.valueOf(lastStartRealTime)+" ORDER BY `start_real_time` ASC");
+								ResultSet fetchedChannelHashUrls=database.runSelectQuery("SELECT url,`start_real_time`,`start_timestamp`,`stop_timestamp` FROM `hash_set` WHERE parent = "+String.valueOf(channel)+" AND `parent_type` = 0 AND `start_real_time` > "+String.valueOf(lastStartRealTime)+" ORDER BY `start_real_time` ASC");
 								if(fetchedChannelHashUrls!=null)
 								{
 									int currentGroupNumber=0;
+									String channelStartTime=null;
+									String channelStopTime=null;
 									List<String> groupUrls=new ArrayList<String>();
 									while(fetchedChannelHashUrls.next())
 									{
 										currentGroupNumber++;
 										groupUrls.add(fetchedChannelHashUrls.getString(1));
+										if(currentGroupNumber==1)//first hash set
+										{
+											channelStartTime=fetchedChannelHashUrls.getString("start_timestamp");
+										}
 										if(currentGroupNumber==hashSetGroupSize)//the last hash set in the group
 										{
 											//update pointer
@@ -807,9 +1013,11 @@ public class SearchingServer extends Application implements Initializable
 											System.out.println("Updating last firstRealTime to :"+newLastStartRealTime);
 											logs.add(new Log(Time.getTime("gmt"), "INFO", "Updating last firstRealTime to :"+newLastStartRealTime));
 											database.runUpdateQuery("UPDATE `search_pointer` SET `last_start_real_time` = "+String.valueOf(newLastStartRealTime)+" WHERE parent = "+String.valueOf(id)+" AND channel = "+String.valueOf(channel));
+											channelStopTime=fetchedChannelHashUrls.getString("stop_timestamp");
 											
 											//compare
-											KeyProcessor keyProcessor=new KeyProcessor(groupUrls, key, hashDir);
+											//int parent, int channel, String channelStartTime, String channelStopTime, String scStartTime, String scStopTime
+											KeyProcessor keyProcessor=new KeyProcessor(groupUrls, key, hashDir, id, channel, channelStartTime, channelStopTime, scStartTime, scStopTime);
 											keyProcessor.process();
 											
 											//set resultset to last row
@@ -819,6 +1027,11 @@ public class SearchingServer extends Application implements Initializable
 								}
 								//update search pointer
 							}
+							else
+							{
+								logs.add(new Log(Time.getTime("gmt"), "INFO", "The number of channel hashSets is not enough. Sleeping for 100 milliseconds"));
+								Thread.sleep(100);
+							}
 						}
 					}
 					
@@ -827,9 +1040,9 @@ public class SearchingServer extends Application implements Initializable
 				catch(Exception e)
 				{
 					e.printStackTrace();
+					System.exit(0);
 				}
 			}
-			database.close();
 		}
 	}
 }

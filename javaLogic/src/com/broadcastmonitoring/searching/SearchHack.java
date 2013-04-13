@@ -83,7 +83,7 @@ public class SearchHack
 					{
 						currentGroupNumber++;
 						groupUrls.add(fetchedChannelHashUrls.getString(1));
-						if(currentGroupNumber==hashSetGroupSize || fetchedChannelHashUrls.isLast())
+						/*if(currentGroupNumber==hashSetGroupSize || fetchedChannelHashUrls.isLast())
 						{
 							HashSetGroup hashSetGroup=new HashSetGroup(groupUrls, advertHashes, dir);
 							//hashSetGroup.showHashSetUrls();
@@ -91,7 +91,7 @@ public class SearchHack
 							//TODO: do the processing for the group
 							currentGroupNumber=0;
 							groupUrls=new ArrayList<String>();
-						}
+						}*/
 					}
 				}
 				catch(Exception e)

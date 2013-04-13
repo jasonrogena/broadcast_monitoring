@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane id="AnchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="564.0" xmlns:fx="http://javafx.com/fxml">
+  <children>
+    <Label fx:id="timelineNodeLabel" layoutX="46.0" layoutY="32.0" text="Niko Na Safaricom on KTN">
+      <font>
+        <Font size="16.0" />
+      </font>
+    </Label>
+    <TextField id="thresholdTB" fx:id="thresholdTF" layoutX="469.0" layoutY="353.0" minHeight="30.0" prefHeight="30.0" prefWidth="54.0" />
+    <Label layoutX="392.0" layoutY="360.0" text="Threshold :" />
+    <HBox fx:id="timelineHBox" alignment="CENTER_RIGHT" layoutX="12.0" layoutY="95.0" prefHeight="232.0" prefWidth="533.0" rotate="0.0">
+      <rotationAxis>
+        <Point3D x="1.0" />
+      </rotationAxis>
+    </HBox>
+    <Button fx:id="startStopButton" layoutX="39.0" layoutY="353.0" mnemonicParsing="false" prefHeight="30.0" text="Start" />
+  </children>
+</AnchorPane>

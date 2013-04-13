@@ -27,10 +27,13 @@
             <Insets bottom="15.0" fx:id="x2" />
           </VBox.margin>
         </TextField>
-        <Label text="Location" VBox.margin="$x1" />
-        <TextField fx:id="searchableContentLocationTF" prefHeight="30.0" prefWidth="200.0" VBox.margin="$x2" />
+        <Button fx:id="fileChooserButton" mnemonicParsing="false" prefHeight="30.0" prefWidth="315.0" text="Choose the File">
+          <VBox.margin>
+            <Insets bottom="15.0" fx:id="x2" />
+          </VBox.margin>
+        </Button>
         <Label text="Station to search" VBox.margin="$x1" />
-        <ComboBox fx:id="stationToSearchCB" prefHeight="30.0" prefWidth="353.0" />
+        <ComboBox fx:id="stationToSearchCB" prefHeight="30.0" prefWidth="315.0" />
       </children>
     </VBox>
     <Button fx:id="searchButton" layoutX="410.0" layoutY="310.0" mnemonicParsing="false" prefHeight="30.0" text="Search" />

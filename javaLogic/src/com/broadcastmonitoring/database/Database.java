@@ -6,6 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import com.broadcastmonitoring.utils.Int;
+
 public class Database 
 {
 	private final String url;
@@ -97,6 +99,26 @@ public class Database
 			try 
 			{
 				preparedStatement.setInt(insertColumnCount, value);
+				insertColumnCount++;
+			} 
+			catch (SQLException e) 
+			{
+				e.printStackTrace();
+			}
+		}
+		else
+		{
+			System.err.println("****Unable to add column value to statement because preparedStatement is null****\n# Database.java #");
+		}
+	}
+	
+	public void addColumnValue(long value)
+	{
+		if(preparedStatement!=null)
+		{
+			try 
+			{
+				preparedStatement.setInt(insertColumnCount, Int.safeLongToInt(value));
 				insertColumnCount++;
 			} 
 			catch (SQLException e) 
