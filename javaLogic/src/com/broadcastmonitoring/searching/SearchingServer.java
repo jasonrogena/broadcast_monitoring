@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -50,6 +51,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
@@ -102,6 +104,14 @@ public class SearchingServer extends Application implements Initializable
 	@FXML private Button settingsSaveButton;
 	@FXML private Button clearLogButton;
 	@FXML private AnchorPane searchTabAnchorPane;
+	@FXML private ComboBox<String> historyComboBox;
+	@FXML private Button historyDisplayButton;
+	@FXML private TextField historyThresholdTF;
+	@FXML private TableView<SearchResult> searchHistoryTable;
+	@FXML private TableColumn<SearchResult, String> startTimeTC;
+	@FXML private TableColumn<SearchResult, String> stopTimeTC;
+	@FXML private TableColumn<SearchResult, Integer> highestBinFreqTC;
+	@FXML private TableColumn<SearchResult, Integer> probabilityRatioTC;
 	private Node searchNode=null;
 	private ComboBox<String> stationToSearchCB;
 	private Button searchButton;
@@ -113,21 +123,11 @@ public class SearchingServer extends Application implements Initializable
 	private HBox timelineHBox;
 	private TextField thresholdTF;
 	private Button startStopButton;
+	private List<Rectangle> timelineRects;
 	
 	private static final ObservableList<Log> logs=FXCollections.observableArrayList();
+	private final ObservableList<SearchResult> searchResults=FXCollections.observableArrayList();
 	
-	/*private static final float sampleRate=44100;
-	private static final int hashmapSize=10;
-	private static final int frameSize=2048;
-	private static final int redundantThreshold=2;
-	private static final int startFreq=50;
-	private static final int targetZoneSize=5;
-	private static final int anchor2peakMaxFreqDiff=1000;
-	private static final int sampledFrequencies=5;
-	private static final int hashSetGroupSize=7;
-	private static final int keyPieceMultiplier=2;
-	private static final boolean limitKeyPieceSize=true;
-	private static final int smoothingWidth=101;*/
 	private static float sampleRate;
 	private static int hashmapSize;
 	private static int frameSize;
@@ -147,6 +147,7 @@ public class SearchingServer extends Application implements Initializable
 	private int stopSearchFlag=0;
 	private int startSearchFlag=0;
 	private double timelineTime=20;
+	private final int realTimelineWidth=533;
 	
 	public static void main(String[] args)
 	{
@@ -281,6 +282,20 @@ public class SearchingServer extends Application implements Initializable
 		initSettings();
 		settingsCancelButton.setOnAction(eventHandler);
 		settingsSaveButton.setOnAction(eventHandler);
+		
+		initHistoryComboBox();
+		historyDisplayButton.setOnAction(eventHandler);
+		
+		startTimeTC.setCellValueFactory(new PropertyValueFactory<SearchResult, String>("startTime"));
+		startTimeTC.setEditable(false);
+		stopTimeTC.setCellValueFactory(new PropertyValueFactory<SearchResult, String>("stopTime"));
+		stopTimeTC.setEditable(false);
+		highestBinFreqTC.setCellValueFactory(new PropertyValueFactory<SearchResult, Integer>("largestBinFreq"));
+		highestBinFreqTC.setEditable(false);
+		probabilityRatioTC.setCellValueFactory(new PropertyValueFactory<SearchResult, Integer>("probabilityRatio"));
+		probabilityRatioTC.setEditable(false);
+		
+		searchHistoryTable.setItems(searchResults);
 	}
 
 	@Override
@@ -309,6 +324,13 @@ public class SearchingServer extends Application implements Initializable
 			e.printStackTrace();
 			//TODO: add log to log list
 		}
+	}
+	
+	private void initHistoryComboBox()
+	{
+		ExecutorService executorService=Executors.newFixedThreadPool(1);
+		SearchHistoryHandler searchHistoryHandler=new SearchHistoryHandler(historyComboBox);
+		Future<String> future=executorService.submit(searchHistoryHandler);
 	}
 	
 	private void initTimelineNode()
@@ -353,6 +375,7 @@ public class SearchingServer extends Application implements Initializable
 		if(timelineNode!=null)
 		{
 			timelineHBox=(HBox)timelineNode.lookup("#timelineHBox");
+			initTimelineRects();
 		}
 		else
 		{
@@ -365,6 +388,7 @@ public class SearchingServer extends Application implements Initializable
 		if(timelineNode!=null)
 		{
 			thresholdTF=(TextField)timelineNode.lookup("#thresholdTF");
+			thresholdTF.setText("0");
 		}
 		else
 		{
@@ -462,47 +486,227 @@ public class SearchingServer extends Application implements Initializable
 		}
 	}
 	
+	private void initTimelineRects()
+	{
+		timelineRects=new ArrayList<Rectangle>();
+		timelineHBox.getChildren().clear();
+		int numberOfRects=533;//(int)timelineHBox.getWidth();
+		for (int i = 0; i < numberOfRects; i++) 
+		{
+			Rectangle newRect=new Rectangle();
+			newRect.setWidth(1);
+			newRect.setHeight(1);
+			newRect.setFill(Color.BLACK);
+			timelineHBox.getChildren().add(newRect);
+			timelineRects.add(newRect);
+		}
+	}
+	
+	private void initSettings()
+	{
+		sampleRateTF.setText(String.valueOf(sampleRate));
+		frameSizeTF.setText(String.valueOf(frameSize));
+		hashMapSizeTF.setText(String.valueOf(hashmapSize));
+		redundantThresholdTF.setText(String.valueOf(redundantThreshold));
+		highPassFilterTF.setText(String.valueOf(startFreq));
+		targetZoneSizeTF.setText(String.valueOf(targetZoneSize));
+		anchor2PeakMaxFreqDiffTF.setText(String.valueOf(anchor2peakMaxFreqDiff));
+		baseForSampledFreqTF.setText(String.valueOf(sampledFrequencies));
+		hashSetGroupSizeTF.setText(String.valueOf(hashSetGroupSize));
+		keyPieceMultiplierTF.setText(String.valueOf(keyPieceMultiplier));
+		limitKeyPieceSizeTF.setText(String.valueOf(limitKeyPieceSize));
+	}
+	
+	private class HistoryTablehandler implements Callable<String>
+	{
+		private String selectedItem;
+		private int threshold;
+		
+		public HistoryTablehandler(String selectedItem, int theshold)
+		{
+			this.selectedItem=selectedItem;
+			this.threshold=theshold;
+		}
+		
+		@Override
+		public String call() throws Exception 
+		{
+			Database database=new Database("broadcast_monitoring", "root", "jason");
+			List<String> items = Arrays.asList(selectedItem.split(" - "));//first item should be scId then scname then channel name
+			searchResults.clear();
+			if(items.size()==3)
+			{
+				int searchableContentID=Integer.parseInt(items.get(0));
+				String channelName=items.get(2);
+				int channelNumber=getChannelNumber(channelName);
+				
+				ResultSet resultSet=database.runSelectQuery("SELECT `channel_start_time`, `channel_stop_time`, `largest_bin_freq`, `probability_ratio` FROM `search_result` WHERE parent = "+String.valueOf(searchableContentID)+" AND channel = "+String.valueOf(channelNumber)+" AND `probability_ratio` > "+String.valueOf(threshold));
+				while(resultSet.next())
+				{
+					searchResults.add(new SearchResult(searchableContentID, channelNumber, resultSet.getString("channel_start_time"), resultSet.getString("channel_stop_time"), resultSet.getInt("largest_bin_freq"), resultSet.getInt("probability_ratio")));
+				}
+			}
+			else
+			{
+				logs.add(new Log(Time.getTime("gmt"), "ERROR", "SearchingServer.java: There was an error while trying to resolve the Searchable Content and Channel"));
+			}
+			database.close();
+			return null;
+		}
+		
+	}
+
+	private class SearchHistoryHandler implements Callable<String>
+	{
+		private ComboBox<String> comboBox;
+		public SearchHistoryHandler(ComboBox<String> comboBox) 
+		{
+			this.comboBox=comboBox;
+		}
+		@Override
+		public String call() throws Exception 
+		{
+			Database database=new Database("broadcast_monitoring", "root", "jason");
+			ResultSet resultSet=database.runSelectQuery("SELECT parent, channel FROM `search_pointer`");
+			ObservableList<String> pairs=FXCollections.observableArrayList();
+			while(resultSet.next())
+			{
+				pairs.add(resultSet.getString("parent")+" - "+getParentName(resultSet.getInt("parent"))+" - "+getChannelName(resultSet.getInt("channel")));
+			}
+			comboBox.getItems().clear();
+			comboBox.setItems(pairs);
+			
+			database.close();
+			return null;
+		}
+		private String getParentName(int id)
+		{
+			Database database=new Database("broadcast_monitoring", "root", "jason");
+			ResultSet resultSet=database.runSelectQuery("SELECT name FROM `searchable_content` WHERE id = "+String.valueOf(id));
+			try
+			{
+				if(resultSet.next())
+				{
+					String name=resultSet.getString("name");
+					database.close();
+					return name;
+				}
+			} 
+			catch (SQLException e)
+			{
+				logs.add(new Log(Time.getTime("gmt"), "ERROR", "SearchingServer.java: SQLException thrown while tring to get searchable content name"));
+				e.printStackTrace();
+			}
+			database.close();
+			return null;
+		}
+		
+	}
+	
+	private String getChannelName(int number)
+	{
+		Database database=new Database("broadcast_monitoring", "root", "jason");
+		ResultSet resultSet=database.runSelectQuery("SELECT name FROM channel WHERE number = "+String.valueOf(number));
+		try
+		{
+			if(resultSet.next())
+			{
+				String name=resultSet.getString("name");
+				database.close();
+				return name;
+			}
+		} 
+		catch (SQLException e)
+		{
+			logs.add(new Log(Time.getTime("gmt"), "ERROR", "SearchingServer.java: SQLException thrown while tring to get channel name"));
+			e.printStackTrace();
+		}
+		database.close();
+		return null;
+	}
+	
+	private int getChannelNumber(String channel)
+	{
+		logs.add(new Log(Time.getTime("gmt"), "INFO", "Getting Channel number for Database"));
+		Database database=new Database("broadcast_monitoring", "root", "jason");
+		ResultSet resultSet=database.runSelectQuery("SELECT `number` FROM `channel` WHERE name = '"+channel+"'");
+		try 
+		{
+			if(resultSet.next())
+			{
+				int id=resultSet.getInt("number");
+				database.close();
+				logs.add(new Log(Time.getTime("gmt"), "INFO", "Channel number = "+id));
+				return id;
+			}
+		} 
+		catch (SQLException e)
+		{
+			e.printStackTrace();
+			logs.add(new Log(Time.getTime("gmt"), "ERROR", "SQLException thrown while trying to get channel number"));
+		}
+		database.close();
+		return -1;
+	}
+	
 	private class TimelineHandler implements Callable<String>
 	{
 
 		@Override
 		public String call() throws Exception
 		{
-			double timelineWidth=timelineHBox.getWidth();
+			double timelineWidth=(double)realTimelineWidth;
 			double timelineRatio=timelineWidth/timelineTime;
-			
-			timelineHBox.getChildren().clear();
 			
 			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			dateFormat.setTimeZone(TimeZone.getTimeZone("gmt"));
 			Calendar cal = Calendar.getInstance();
-			System.out.println("Check  dfdfdafskjdfsfads "+Int.safeLongToInt(Math.round(-1*timelineTime)));
+			
 			cal.add(Calendar.MINUTE, Int.safeLongToInt(Math.round(-1*timelineTime)));
 			String before=dateFormat.format(cal.getTime());
 			
 			Database database=new Database("broadcast_monitoring", "root", "jason");
-			ResultSet resultSet=database.runSelectQuery("SELECT * FROM `search_result` WHERE `channel_start_time` > '"+before+"' ORDER BY `channel_start_time` ASC");
-			while(resultSet.next())
+			while(stopSearchFlag==0)
 			{
-				Date channelStartTime=resultSet.getDate("channel_start_time");
-				Date channelStopTime=resultSet.getDate("channel_stop_time");
-				double td=(double)(channelStopTime.getTime()-channelStartTime.getTime());
-				double timeDifference=td/60000;//time difference in minutes
-				double width=timeDifference*timelineRatio;
-				int probabilityRatio=resultSet.getInt("probability_ratio");
-				int yCoeficient=probabilityRatio-Integer.parseInt(thresholdTF.getText());
-				if(yCoeficient<1)
+				int timelinePointer=timelineRects.size()-1;
+				//ResultSet resultSet=database.runSelectQuery("SELECT * FROM `search_result` WHERE `channel_start_time` > '"+before+"' ORDER BY `channel_start_time` ASC");
+				ResultSet resultSet=database.runSelectQuery("SELECT * FROM `search_result` ORDER BY `channel_start_time` ASC");
+				while(resultSet.next())
 				{
-					yCoeficient=1;
+					if(timelinePointer<0)
+					{
+						break;
+					}
+					Date channelStartTime=resultSet.getDate("channel_start_time");
+					Date channelStopTime=resultSet.getDate("channel_stop_time");
+					double td=(double)(channelStopTime.getTime()-channelStartTime.getTime());
+					double timeDifference=td/60000;//time difference in minutes
+					int width=(int)(timeDifference*timelineRatio);
+					if(width>=0)
+					{
+						width=1;
+					}
+					int probabilityRatio=resultSet.getInt("probability_ratio");
+					int yCoeficient=probabilityRatio-Integer.parseInt(thresholdTF.getText());
+					if(yCoeficient<1)
+					{
+						yCoeficient=1;
+					}
+					double height=(double)(yCoeficient*0.25);
+					for (int i = 0; i < width; i++) 
+					{
+						timelineRects.get(timelinePointer).setHeight(height);
+						System.out.println("height = "+timelineRects.get(timelinePointer).getHeight());
+						timelinePointer--;
+						if(timelinePointer<0)
+						{
+							break;
+						}
+					}
 				}
-				double height=(double)(yCoeficient);
-				Rectangle rect=new Rectangle();
-				rect.setWidth(width);
-				rect.setHeight(height);
-				
-				timelineHBox.getChildren().add(rect);
-				
+				Thread.sleep(1000);
 			}
+			database.close();
 			return null;
 		}
 		
@@ -531,21 +735,6 @@ public class SearchingServer extends Application implements Initializable
 			return null;
 		}
 		
-	}
-	
-	private void initSettings()
-	{
-		sampleRateTF.setText(String.valueOf(sampleRate));
-		frameSizeTF.setText(String.valueOf(frameSize));
-		hashMapSizeTF.setText(String.valueOf(hashmapSize));
-		redundantThresholdTF.setText(String.valueOf(redundantThreshold));
-		highPassFilterTF.setText(String.valueOf(startFreq));
-		targetZoneSizeTF.setText(String.valueOf(targetZoneSize));
-		anchor2PeakMaxFreqDiffTF.setText(String.valueOf(anchor2peakMaxFreqDiff));
-		baseForSampledFreqTF.setText(String.valueOf(sampledFrequencies));
-		hashSetGroupSizeTF.setText(String.valueOf(hashSetGroupSize));
-		keyPieceMultiplierTF.setText(String.valueOf(keyPieceMultiplier));
-		limitKeyPieceSizeTF.setText(String.valueOf(limitKeyPieceSize));
 	}
 	
 	private class MyEventHandler implements EventHandler<ActionEvent>
@@ -614,6 +803,7 @@ public class SearchingServer extends Application implements Initializable
 				File selectedFile=fileChooser.showOpenDialog(null);
 				try
 				{
+					//TODO: check if a file has been chosen
 					fileChooserButton.setText(selectedFile.getCanonicalPath());
 				} 
 				catch (IOException e)
@@ -629,12 +819,23 @@ public class SearchingServer extends Application implements Initializable
 				{
 					startStopButton.setText("Stop");
 					startSearchFlag=1;
+					System.out.println("starting timeline handler");
+					ExecutorService executorService=Executors.newFixedThreadPool(1);
+					TimelineHandler timelineHandler=new TimelineHandler();
+					Future<String> future=executorService.submit(timelineHandler);
+					
 				}
 				else if(startSearchFlag==1 && stopSearchFlag==0)
 				{
 					stopSearchFlag=1;
 					initSearchNode();
 				}
+			}
+			else if(event.getSource()==historyDisplayButton)
+			{
+				ExecutorService executorService=Executors.newFixedThreadPool(1);
+				HistoryTablehandler historyTablehandler=new HistoryTablehandler(historyComboBox.getValue(), Integer.parseInt(historyThresholdTF.getText()));
+				Future<String> future=executorService.submit(historyTablehandler);
 			}
 			
 		}
@@ -923,29 +1124,6 @@ public class SearchingServer extends Application implements Initializable
 			logs.add(new Log(Time.getTime("gmt"), "INFO", "Number of hashes in key : "+sContentHashes.size()));
 			return sContentHashes;
 		}
-		private int getChannelNumber(String channel)
-		{
-			logs.add(new Log(Time.getTime("gmt"), "INFO", "Getting Channel number for Database"));
-			Database database=new Database("broadcast_monitoring", "root", "jason");
-			ResultSet resultSet=database.runSelectQuery("SELECT `number` FROM `channel` WHERE name = '"+channel+"'");
-			try 
-			{
-				if(resultSet.next())
-				{
-					int id=resultSet.getInt("number");
-					database.close();
-					logs.add(new Log(Time.getTime("gmt"), "INFO", "Channel number = "+id));
-					return id;
-				}
-			} 
-			catch (SQLException e)
-			{
-				e.printStackTrace();
-				logs.add(new Log(Time.getTime("gmt"), "ERROR", "SQLException thrown while trying to get channel number"));
-			}
-			database.close();
-			return -1;
-		}
 		
 		private void searchKeyInChannel(int id, int channel, int hashSetGroupSize, List<Hash> key, String hashDir, Database database)
 		{
@@ -1030,7 +1208,7 @@ public class SearchingServer extends Application implements Initializable
 							else
 							{
 								logs.add(new Log(Time.getTime("gmt"), "INFO", "The number of channel hashSets is not enough. Sleeping for 100 milliseconds"));
-								Thread.sleep(100);
+								Thread.sleep(500);
 							}
 						}
 					}

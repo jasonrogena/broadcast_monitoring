@@ -15,13 +15,13 @@
         <Font size="16.0" />
       </font>
     </Label>
-    <TextField id="thresholdTB" fx:id="thresholdTF" layoutX="469.0" layoutY="353.0" minHeight="30.0" prefHeight="30.0" prefWidth="54.0" />
+    <TextField fx:id="thresholdTF" layoutX="469.0" layoutY="353.0" minHeight="30.0" prefHeight="30.0" prefWidth="54.0" />
     <Label layoutX="392.0" layoutY="360.0" text="Threshold :" />
     <HBox fx:id="timelineHBox" alignment="CENTER_RIGHT" layoutX="12.0" layoutY="95.0" prefHeight="232.0" prefWidth="533.0" rotate="0.0">
       <rotationAxis>
         <Point3D x="1.0" />
       </rotationAxis>
     </HBox>
-    <Button fx:id="startButton" layoutX="39.0" layoutY="353.0" mnemonicParsing="false" prefHeight="30.0" text="Start" />
+    <Button fx:id="startStopButton" layoutX="39.0" layoutY="353.0" mnemonicParsing="false" prefHeight="30.0" text="Start" />
   </children>
 </AnchorPane>
