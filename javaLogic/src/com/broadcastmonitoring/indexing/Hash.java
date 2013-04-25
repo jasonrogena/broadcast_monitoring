@@ -9,14 +9,16 @@ public class Hash implements Serializable
 	private final int timeDifference;
 	private final int anchorRealTime;
 	private final String timestamp;
+	private final long timestampMilliseconds;
 	
-	public Hash(int f1,int f2,int timeDifference, int anchorRealTime, String timestamp)
+	public Hash(int f1,int f2,int timeDifference, int anchorRealTime, String timestamp, long timestampMilliseconds)
 	{
 		this.anchorFrequency=f1;
 		this.otherFrequency=f2;
 		this.timeDifference=timeDifference;
 		this.anchorRealTime=anchorRealTime;
 		this.timestamp=timestamp;
+		this.timestampMilliseconds=timestampMilliseconds;
 	}
 	
 	public int getF1()
@@ -42,6 +44,11 @@ public class Hash implements Serializable
 	public String getTimestamp()
 	{
 		return timestamp;
+	}
+	
+	public long getTimestampMilliseconds()
+	{
+		return timestampMilliseconds;
 	}
 
 }

@@ -75,6 +75,7 @@ public class IndexingServer extends Application implements Initializable
 	private final ObservableList<Station> indexingInfo=FXCollections.observableArrayList();
 	private List<Streamer> streamers;
 	private static final ObservableList<Log> logs=FXCollections.observableArrayList();
+	private static final Database database=new Database("broadcast_monitoring", "root", "jason");
 	
 	protected static float sampleRate; //is in Hz. results in about 20000 freqs. This is also the standard sample rate for WAV files which this app uses
 	protected static int frameSize; //determines the  resolution of the spectrogram = number of hashes generated
@@ -103,7 +104,7 @@ public class IndexingServer extends Application implements Initializable
 	{
 		try
 		{
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
 			ResultSet resultSet=database.runSelectQuery("SELECT name,value FROM variables WHERE type = 0 OR type = 2");
 			while(resultSet.next())
 			{
@@ -175,6 +176,11 @@ public class IndexingServer extends Application implements Initializable
 				@Override
 				public void handle(WindowEvent arg0)
 				{
+					for (int i = 0; i < indexingInfo.size(); i++) 
+					{
+						indexingInfo.get(i).setRunning(false);
+					}
+					database.close();
 					System.exit(0);
 				}
 			});
@@ -287,7 +293,7 @@ public class IndexingServer extends Application implements Initializable
 		@Override
 		public String call() throws Exception 
 		{
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
 			ResultSet resultSet=database.runSelectQuery("SELECT name FROM channel");
 			ObservableList<String> stationNames=FXCollections.observableArrayList();
 			while(resultSet.next())
@@ -316,7 +322,7 @@ public class IndexingServer extends Application implements Initializable
 		@Override
 		public String call() throws Exception 
 		{
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
 			database.initInsertStatement("INSERT INTO channel(name,type,interface) VALUES(?,?,?)");
 			database.addColumnValue(name);
 			database.addColumnValue(type);
@@ -354,7 +360,7 @@ public class IndexingServer extends Application implements Initializable
 		@Override
 		public String call() throws Exception 
 		{
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
 			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newSampleRate)+" WHERE name = 'sampleRate' AND ( type = 0 OR type = 2 )");
 			sampleRate=newSampleRate;
 			logs.add(new Log(Time.getTime("gmt"), "INFO", "Value of sampleRate updated to "+String.valueOf(sampleRate)));
@@ -461,7 +467,7 @@ public class IndexingServer extends Application implements Initializable
 				{
 					try
 					{
-						Database database=new Database("broadcast_monitoring", "root", "jason");
+						//Database database=new Database("broadcast_monitoring", "root", "jason");
 						ResultSet resultSet=database.runSelectQuery("SELECT number, interface, type FROM channel WHERE name = '"+selectedStation+"'");
 						if(resultSet.next())
 						{

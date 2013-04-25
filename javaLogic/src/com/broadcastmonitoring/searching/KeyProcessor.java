@@ -13,8 +13,8 @@ import com.broadcastmonitoring.indexing.Hash;
 public class KeyProcessor extends HashSetGroup
 {
 	
-	public KeyProcessor(List<String> hashSetUrls, List<Hash> advertHashes, String dir, int parent, int channel, String channelStartTime, String channelStopTime, String scStartTime, String scStopTime)
+	public KeyProcessor(List<String> hashSetUrls, List<Hash> advertHashes, String dir, int parent, int channel, String channelStartTime, String channelStopTime, String scStartTime, String scStopTime, long channelStartMilliseconds, long channelStopMilliseconds)
 	{
-		super(hashSetUrls, advertHashes, dir, parent, channel, channelStartTime, channelStopTime, scStartTime, scStopTime);
+		super(hashSetUrls, advertHashes, dir, parent, channel, channelStartTime, channelStopTime, scStartTime, scStopTime, channelStartMilliseconds, channelStopMilliseconds);
 	}
 }

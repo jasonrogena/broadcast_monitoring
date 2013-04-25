@@ -6,12 +6,14 @@ public class Peak
 	private final int time;
 	private final int realTime;
 	private final String timestamp;
-	public Peak(int time, int freq, int realTime, String timestamp) 
+	private final long timestampMilliseconds;
+	public Peak(int time, int freq, int realTime, String timestamp, long timestampMilliseconds) 
 	{
 		this.time=time;
 		this.frequency=freq;
 		this.realTime=realTime;
 		this.timestamp=timestamp;
+		this.timestampMilliseconds=timestampMilliseconds;
 	}
 	
 	public int getFrequency()
@@ -32,5 +34,10 @@ public class Peak
 	public String getTimestamp()
 	{
 		return timestamp;
+	}
+	
+	public long getTimestampMilliseconds()
+	{
+		return timestampMilliseconds;
 	}
 }

@@ -13,7 +13,8 @@ public class Frame
 	private final int realTime;
 	private final String timestamp;
 	private double[] freqMagnitudes;
-	public Frame(byte[] buffer, int redundantThreshold,int startFreq, int realTime, String timestamp)
+	private final long timestampMilliseconds;
+	public Frame(byte[] buffer, int redundantThreshold,int startFreq, int realTime, String timestamp, long timestampMilliseconds)
 	{
 		//this.buffer=buffer;
 		//System.out.println(realTime+" >"+buffer[0]+" "+buffer[buffer.length/2]+" "+buffer[buffer.length-1]);
@@ -21,6 +22,7 @@ public class Frame
 		this.startFreq=startFreq;
 		this.realTime=realTime;
 		this.timestamp=timestamp;
+		this.timestampMilliseconds=timestampMilliseconds;
 		
 		Complex[] result=new Complex[buffer.length];
 		FastFourierTransformer transformer=new FastFourierTransformer(DftNormalization.STANDARD);
@@ -93,5 +95,10 @@ public class Frame
 	public double[] getFreqMagnitudes()
 	{
 		return freqMagnitudes;
+	}
+	
+	public long getTimestampMilliseconds()
+	{
+		return timestampMilliseconds;
 	}
 }

@@ -15,9 +15,9 @@ public class PeakProcessor
 		this.anchor2peakMaxFreqDiff=anchor2peakMaxFreqDiff;
 	}
 	
-	public void addPeak(int time, int realTime, int freq, String timestamp)
+	public void addPeak(int time, int realTime, int freq, String timestamp, long timestampMilliseconds)
 	{
-		peaks.add(new Peak(time, freq, realTime, timestamp));
+		peaks.add(new Peak(time, freq, realTime, timestamp, timestampMilliseconds));
 	}
 	
 	private double getAbsoluteValue(double value)
@@ -94,7 +94,7 @@ public class PeakProcessor
 							result=new ArrayList<Hash>();
 						}
 						int timeDifference=peaks.get(nearestPeakIndex).getTime()-anchorPeak.getTime();
-						result.add(new Hash(anchorPeak.getFrequency(), peaks.get(nearestPeakIndex).getFrequency(), timeDifference, anchorPeak.getRealTime(), anchorPeak.getTimestamp()));
+						result.add(new Hash(anchorPeak.getFrequency(), peaks.get(nearestPeakIndex).getFrequency(), timeDifference, anchorPeak.getRealTime(), anchorPeak.getTimestamp(), anchorPeak.getTimestampMilliseconds()));
 						
 						//remove nearest peak from working list
 						//workingList.remove(nearestPeakIndex);

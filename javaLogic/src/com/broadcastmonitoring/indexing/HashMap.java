@@ -156,7 +156,7 @@ public class HashMap
 						
 						if(j%sampledFrequencies==0)//if frequency of peak is divisible by sampledFrequencies
 						{
-							peakProcessor.addPeak(i, frames[i].getRealTime(), j, frames[i].getTimestamp());
+							peakProcessor.addPeak(i, frames[i].getRealTime(), j, frames[i].getTimestamp(), frames[i].getTimestampMilliseconds());
 						}
 					}
 					else
@@ -332,13 +332,15 @@ public class HashMap
 							objectOutputStream=new ObjectOutputStream(fileOutputStream);
 							objectOutputStream.writeObject(hashes);
 							
-							database.initInsertStatement("INSERT INTO `broadcast_monitoring`.`hash_set`(`start_timestamp`,`stop_timestamp`,url,parent,`start_real_time`,`parent_type`) VALUES (?,?,?,?,?,?)");
+							database.initInsertStatement("INSERT INTO `broadcast_monitoring`.`hash_set`(`start_timestamp`,`stop_timestamp`,url,parent,`start_real_time`,`parent_type`, `start_milliseconds`, `stop_milliseconds`) VALUES (?,?,?,?,?,?,?,?)");
 							database.addColumnValue(hashes.get(0).getTimestamp());
 							database.addColumnValue(hashes.get(hashes.size()-1).getTimestamp());
 							database.addColumnValue(fileName);
 							database.addColumnValue(parent);
 							database.addColumnValue(hashes.get(0).getRealTime());
 							database.addColumnValue(parentType);
+							database.addColumnValue(hashes.get(0).getTimestampMilliseconds());
+							database.addColumnValue(hashes.get(hashes.size()-1).getTimestampMilliseconds());
 							
 							database.executeInsert();
 						} 

@@ -118,7 +118,8 @@ public class Database
 		{
 			try 
 			{
-				preparedStatement.setInt(insertColumnCount, Int.safeLongToInt(value));
+				//preparedStatement.setInt(insertColumnCount, Int.safeLongToInt(value));
+				preparedStatement.setLong(insertColumnCount, value);
 				insertColumnCount++;
 			} 
 			catch (SQLException e) 

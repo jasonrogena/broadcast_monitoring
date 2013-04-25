@@ -1,7 +1,6 @@
 package com.broadcastmonitoring.searching;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -11,15 +10,12 @@ import java.io.ObjectInputStream;
 import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.Scanner;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -30,11 +26,11 @@ import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -43,6 +39,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -61,18 +58,10 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
 import com.broadcastmonitoring.database.Database;
-import com.broadcastmonitoring.indexing.Frame;
 import com.broadcastmonitoring.indexing.Hash;
-import com.broadcastmonitoring.indexing.HashMap;
 import com.broadcastmonitoring.indexing.Streamer;
-import com.broadcastmonitoring.utils.Int;
 import com.broadcastmonitoring.utils.Log;
-import com.broadcastmonitoring.utils.StreamGobbler;
 import com.broadcastmonitoring.utils.Time;
 
 public class SearchingServer extends Application implements Initializable
@@ -81,7 +70,6 @@ public class SearchingServer extends Application implements Initializable
 	//TODO: best solution seems to let mplayer play the media and the server capture mplayer standard output
 	public static final int MEDIA_TYPE_AUDIO=0;
 	public static final int MEDIA_TYPE_VIDEO=1;
-	private static Scanner in=new Scanner(System.in);
 	
 	@FXML private TableView<Log> logTable;
 	@FXML private TableColumn<Log, String> timeTC;
@@ -112,6 +100,11 @@ public class SearchingServer extends Application implements Initializable
 	@FXML private TableColumn<SearchResult, String> stopTimeTC;
 	@FXML private TableColumn<SearchResult, Integer> highestBinFreqTC;
 	@FXML private TableColumn<SearchResult, Integer> probabilityRatioTC;
+	@FXML private Tab searchTab;
+	@FXML private Tab historyTab;
+	
+	@FXML private AnchorPane rootAnchorPane;
+	
 	private Node searchNode=null;
 	private ComboBox<String> stationToSearchCB;
 	private Button searchButton;
@@ -127,6 +120,7 @@ public class SearchingServer extends Application implements Initializable
 	
 	private static final ObservableList<Log> logs=FXCollections.observableArrayList();
 	private final ObservableList<SearchResult> searchResults=FXCollections.observableArrayList();
+	private static final Database database=new Database("broadcast_monitoring", "root", "jason");
 	
 	private static float sampleRate;
 	private static int hashmapSize;
@@ -146,14 +140,16 @@ public class SearchingServer extends Application implements Initializable
 	
 	private int stopSearchFlag=0;
 	private int startSearchFlag=0;
-	private double timelineTime=20;
+	private double timelineTime=5;
 	private final int realTimelineWidth=533;
+	private int channelNumber;
+	private int searchableContentID;
 	
 	public static void main(String[] args)
 	{
 		try
 		{
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
 			ResultSet resultSet=database.runSelectQuery("SELECT name,value FROM variables WHERE type = 1 OR type = 2");
 			while(resultSet.next())
 			{
@@ -262,6 +258,18 @@ public class SearchingServer extends Application implements Initializable
 	public void initialize(URL arg0, ResourceBundle arg1) 
 	{
 		initSearchNode();
+		searchTab.setOnSelectionChanged(new EventHandler<Event>()
+				{
+			
+			@Override
+			public void handle(Event arg0) 
+			{
+				if(searchTab.isSelected())
+				{
+					initStationToSearchCB();
+				}
+			}
+		});
 		
 		MyEventHandler eventHandler=new MyEventHandler();
 		
@@ -296,6 +304,18 @@ public class SearchingServer extends Application implements Initializable
 		probabilityRatioTC.setEditable(false);
 		
 		searchHistoryTable.setItems(searchResults);
+		historyTab.setOnSelectionChanged(new EventHandler<Event>()
+				{
+			
+			@Override
+			public void handle(Event arg0) 
+			{
+				if(historyTab.isSelected())
+				{
+					initHistoryComboBox();
+				}
+			}
+		});
 	}
 
 	@Override
@@ -306,15 +326,19 @@ public class SearchingServer extends Application implements Initializable
 		{
 			root=FXMLLoader.load(getClass().getResource("searching_server.fxml"));
 			primaryStage.setTitle("Searching Server");
+
 			primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>()
 					{
 				
 				@Override
 				public void handle(WindowEvent arg0) 
 				{
+					database.close();
 					System.exit(0);
 				}
 			});
+			
+			//this.primaryScene=new Scene(root);
 			
 			primaryStage.setScene(new Scene(root));
 			primaryStage.show();
@@ -496,7 +520,7 @@ public class SearchingServer extends Application implements Initializable
 			Rectangle newRect=new Rectangle();
 			newRect.setWidth(1);
 			newRect.setHeight(1);
-			newRect.setFill(Color.BLACK);
+			newRect.setFill(Color.STEELBLUE);
 			timelineHBox.getChildren().add(newRect);
 			timelineRects.add(newRect);
 		}
@@ -531,7 +555,7 @@ public class SearchingServer extends Application implements Initializable
 		@Override
 		public String call() throws Exception 
 		{
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
 			List<String> items = Arrays.asList(selectedItem.split(" - "));//first item should be scId then scname then channel name
 			searchResults.clear();
 			if(items.size()==3)
@@ -566,7 +590,7 @@ public class SearchingServer extends Application implements Initializable
 		@Override
 		public String call() throws Exception 
 		{
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
 			ResultSet resultSet=database.runSelectQuery("SELECT parent, channel FROM `search_pointer`");
 			ObservableList<String> pairs=FXCollections.observableArrayList();
 			while(resultSet.next())
@@ -581,7 +605,6 @@ public class SearchingServer extends Application implements Initializable
 		}
 		private String getParentName(int id)
 		{
-			Database database=new Database("broadcast_monitoring", "root", "jason");
 			ResultSet resultSet=database.runSelectQuery("SELECT name FROM `searchable_content` WHERE id = "+String.valueOf(id));
 			try
 			{
@@ -605,7 +628,6 @@ public class SearchingServer extends Application implements Initializable
 	
 	private String getChannelName(int number)
 	{
-		Database database=new Database("broadcast_monitoring", "root", "jason");
 		ResultSet resultSet=database.runSelectQuery("SELECT name FROM channel WHERE number = "+String.valueOf(number));
 		try
 		{
@@ -628,7 +650,7 @@ public class SearchingServer extends Application implements Initializable
 	private int getChannelNumber(String channel)
 	{
 		logs.add(new Log(Time.getTime("gmt"), "INFO", "Getting Channel number for Database"));
-		Database database=new Database("broadcast_monitoring", "root", "jason");
+		//Database database=new Database("broadcast_monitoring", "root", "jason");
 		ResultSet resultSet=database.runSelectQuery("SELECT `number` FROM `channel` WHERE name = '"+channel+"'");
 		try 
 		{
@@ -651,38 +673,36 @@ public class SearchingServer extends Application implements Initializable
 	
 	private class TimelineHandler implements Callable<String>
 	{
-
+		private int cNumber;
+		private int scID;
+		public TimelineHandler(int channelNumber, int searchableContentID)
+		{
+			cNumber=channelNumber;
+			scID=searchableContentID;
+		}
 		@Override
 		public String call() throws Exception
-		{
-			double timelineWidth=(double)realTimelineWidth;
-			double timelineRatio=timelineWidth/timelineTime;
-			
-			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			dateFormat.setTimeZone(TimeZone.getTimeZone("gmt"));
-			Calendar cal = Calendar.getInstance();
-			
-			cal.add(Calendar.MINUTE, Int.safeLongToInt(Math.round(-1*timelineTime)));
-			String before=dateFormat.format(cal.getTime());
-			
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+		{	
 			while(stopSearchFlag==0)
 			{
+				double timelineWidth=(double)realTimelineWidth;
+				double timelineRatio=timelineWidth/(timelineTime*60000);
+				
 				int timelinePointer=timelineRects.size()-1;
 				//ResultSet resultSet=database.runSelectQuery("SELECT * FROM `search_result` WHERE `channel_start_time` > '"+before+"' ORDER BY `channel_start_time` ASC");
-				ResultSet resultSet=database.runSelectQuery("SELECT * FROM `search_result` ORDER BY `channel_start_time` ASC");
+				ResultSet resultSet=database.runSelectQuery("SELECT * FROM `search_result` WHERE parent = "+String.valueOf(scID)+" AND channel = "+String.valueOf(cNumber)+" ORDER BY `channel_start_time` DESC");//newer results first
 				while(resultSet.next())
 				{
 					if(timelinePointer<0)
 					{
 						break;
 					}
-					Date channelStartTime=resultSet.getDate("channel_start_time");
-					Date channelStopTime=resultSet.getDate("channel_stop_time");
-					double td=(double)(channelStopTime.getTime()-channelStartTime.getTime());
-					double timeDifference=td/60000;//time difference in minutes
+					long channelStartMillisecods=resultSet.getLong("channel_start_milliseconds");
+					long channelStopMilliseconds=resultSet.getLong("channel_stop_milliseconds");
+					long td=channelStopMilliseconds-channelStartMillisecods;
+					double timeDifference=(double)td;//time difference in minutes
 					int width=(int)(timeDifference*timelineRatio);
-					if(width>=0)
+					if(width<1)
 					{
 						width=1;
 					}
@@ -696,7 +716,6 @@ public class SearchingServer extends Application implements Initializable
 					for (int i = 0; i < width; i++) 
 					{
 						timelineRects.get(timelinePointer).setHeight(height);
-						System.out.println("height = "+timelineRects.get(timelinePointer).getHeight());
 						timelinePointer--;
 						if(timelinePointer<0)
 						{
@@ -723,7 +742,7 @@ public class SearchingServer extends Application implements Initializable
 		@Override
 		public String call() throws Exception 
 		{
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
 			ResultSet resultSet=database.runSelectQuery("SELECT name FROM channel");
 			ObservableList<String> stationNames=FXCollections.observableArrayList();
 			while(resultSet.next())
@@ -821,7 +840,7 @@ public class SearchingServer extends Application implements Initializable
 					startSearchFlag=1;
 					System.out.println("starting timeline handler");
 					ExecutorService executorService=Executors.newFixedThreadPool(1);
-					TimelineHandler timelineHandler=new TimelineHandler();
+					TimelineHandler timelineHandler=new TimelineHandler(channelNumber,searchableContentID);
 					Future<String> future=executorService.submit(timelineHandler);
 					
 				}
@@ -886,7 +905,7 @@ public class SearchingServer extends Application implements Initializable
 		@Override
 		public String call() throws Exception 
 		{
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
 			database.runUpdateQuery("UPDATE variables SET value = "+String.valueOf(newSampleRate)+" WHERE name = 'sampleRate' AND ( type = 1 OR type = 2 )");
 			sampleRate=newSampleRate;
 			logs.add(new Log(Time.getTime("gmt"), "INFO", "Value of sampleRate updated to "+String.valueOf(sampleRate)));
@@ -967,22 +986,26 @@ public class SearchingServer extends Application implements Initializable
 		@Override
 		public Integer call() throws Exception 
 		{
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
 			message.setText("Adding Searchable Content to Database");
 			int searchableContentID=addSearchableContentToDB(searchableContentName);
 			message.setText("Generating Hashes from Searchable Content");
 			generateHashes(searchableContentUrl, searchableContentID,smoothingWidth);
 			List<Hash> key=getKeyPiece(hashSetGroupSize, searchableContentID,hashDir,limitKeyPieceSize,keyPieceMultiplier);
 			int channelNumber=getChannelNumber(channel);
-			popup=null;
+			SearchingServer.this.channelNumber=channelNumber;
+			SearchingServer.this.searchableContentID=searchableContentID;
+			
+			message.setText("Finished indexing. You will have to close this dialog to start searching");
 			System.out.println("waiting for user");
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+			
 			while(stopSearchFlag==0)
 			{
 				if(startSearchFlag==1)
 				{
 					System.out.println("Starting the search");
 					logs.add(new Log(Time.getTime("gmt"), "INFO", "Starting the search"));
-					searchKeyInChannel(searchableContentID,channelNumber,hashSetGroupSize,key,hashDir,database);
+					searchKeyInChannel(searchableContentID,channelNumber,hashSetGroupSize,key,hashDir);
 				}
 			}
 
@@ -995,7 +1018,7 @@ public class SearchingServer extends Application implements Initializable
 			System.out.println("Adding searchable content to database");
 			logs.add(new Log(Time.getTime("gmt"), "INFO", "Adding searchable content to database"));
 			
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
 			
 			//get last id if any and increment
 			int id=-1;
@@ -1069,7 +1092,7 @@ public class SearchingServer extends Application implements Initializable
 			List<Hash> sContentHashes=new ArrayList<Hash>();
 			
 			//get hashsets from database
-			Database database=new Database("broadcast_monitoring", "root", "jason");
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
 			ResultSet fetchedHashSetUrls;
 			if(limit==true)
 			{
@@ -1125,7 +1148,7 @@ public class SearchingServer extends Application implements Initializable
 			return sContentHashes;
 		}
 		
-		private void searchKeyInChannel(int id, int channel, int hashSetGroupSize, List<Hash> key, String hashDir, Database database)
+		private void searchKeyInChannel(int id, int channel, int hashSetGroupSize, List<Hash> key, String hashDir)
 		{
 			//get search pointer from database
 			ResultSet resultSet=database.runSelectQuery("SELECT `last_start_real_time` FROM `search_pointer` WHERE parent = "+String.valueOf(id)+" AND channel = "+String.valueOf(channel));
@@ -1169,12 +1192,14 @@ public class SearchingServer extends Application implements Initializable
 							if(numberofHashSets>=hashSetGroupSize)//hash sets can form a group
 							{
 								//fetch
-								ResultSet fetchedChannelHashUrls=database.runSelectQuery("SELECT url,`start_real_time`,`start_timestamp`,`stop_timestamp` FROM `hash_set` WHERE parent = "+String.valueOf(channel)+" AND `parent_type` = 0 AND `start_real_time` > "+String.valueOf(lastStartRealTime)+" ORDER BY `start_real_time` ASC");
+								ResultSet fetchedChannelHashUrls=database.runSelectQuery("SELECT url,`start_real_time`,`start_timestamp`,`stop_timestamp`, `start_milliseconds`, `stop_milliseconds` FROM `hash_set` WHERE parent = "+String.valueOf(channel)+" AND `parent_type` = 0 AND `start_real_time` > "+String.valueOf(lastStartRealTime)+" ORDER BY `start_real_time` ASC");
 								if(fetchedChannelHashUrls!=null)
 								{
 									int currentGroupNumber=0;
 									String channelStartTime=null;
+									long channelStartMilliseconds=0;
 									String channelStopTime=null;
+									long channelStopMilliseconds=0;
 									List<String> groupUrls=new ArrayList<String>();
 									while(fetchedChannelHashUrls.next())
 									{
@@ -1183,6 +1208,7 @@ public class SearchingServer extends Application implements Initializable
 										if(currentGroupNumber==1)//first hash set
 										{
 											channelStartTime=fetchedChannelHashUrls.getString("start_timestamp");
+											channelStartMilliseconds=fetchedChannelHashUrls.getLong("start_milliseconds");
 										}
 										if(currentGroupNumber==hashSetGroupSize)//the last hash set in the group
 										{
@@ -1192,10 +1218,11 @@ public class SearchingServer extends Application implements Initializable
 											logs.add(new Log(Time.getTime("gmt"), "INFO", "Updating last firstRealTime to :"+newLastStartRealTime));
 											database.runUpdateQuery("UPDATE `search_pointer` SET `last_start_real_time` = "+String.valueOf(newLastStartRealTime)+" WHERE parent = "+String.valueOf(id)+" AND channel = "+String.valueOf(channel));
 											channelStopTime=fetchedChannelHashUrls.getString("stop_timestamp");
+											channelStopMilliseconds=fetchedChannelHashUrls.getLong("stop_milliseconds");
 											
 											//compare
 											//int parent, int channel, String channelStartTime, String channelStopTime, String scStartTime, String scStopTime
-											KeyProcessor keyProcessor=new KeyProcessor(groupUrls, key, hashDir, id, channel, channelStartTime, channelStopTime, scStartTime, scStopTime);
+											KeyProcessor keyProcessor=new KeyProcessor(groupUrls, key, hashDir, id, channel, channelStartTime, channelStopTime, scStartTime, scStopTime, channelStartMilliseconds, channelStopMilliseconds);
 											keyProcessor.process();
 											
 											//set resultset to last row
@@ -1218,6 +1245,7 @@ public class SearchingServer extends Application implements Initializable
 				catch(Exception e)
 				{
 					e.printStackTrace();
+					database.close();
 					System.exit(0);
 				}
 			}

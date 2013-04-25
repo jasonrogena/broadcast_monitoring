@@ -210,7 +210,7 @@ public class Streamer
 					//System.out.println(buffer[0]+" "+buffer[buffer.length/2]+" "+buffer[buffer.length-1]);
 					//previous=buffer;
 					
-					frameBuffer[frameCount-1]=new Frame(buffer,redundantThreshold,startFreq,timeCounter, timestamp);
+					frameBuffer[frameCount-1]=new Frame(buffer,redundantThreshold,startFreq,timeCounter, timestamp, date.getTime());
 					//frameBuffer[0].printBuffer();
 					if(frameCount==hashmapSize)
 					{

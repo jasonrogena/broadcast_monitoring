@@ -44,10 +44,12 @@ public class HashSetGroup
 	private String channelStopTime; 
 	private String scStartTime;
 	private String scStopTime;
+	private long channelStartMilliseconds;
+	private long channelStopMilliseconds;
 	
 	
 	
-	public HashSetGroup(List<String> hashSetUrls, List<Hash> advertHashes, String dir, int parent, int channel, String channelStartTime, String channelStopTime, String scStartTime, String scStopTime)
+	public HashSetGroup(List<String> hashSetUrls, List<Hash> advertHashes, String dir, int parent, int channel, String channelStartTime, String channelStopTime, String scStartTime, String scStopTime, long channelStartMilliseconds, long channelStopMilliseconds)
 	{
 		this.hashSetUrls=hashSetUrls;
 		this.advertHashes=advertHashes;
@@ -66,6 +68,8 @@ public class HashSetGroup
 		this.channelStopTime=channelStopTime;
 		this.scStartTime=scStartTime;
 		this.scStopTime=scStopTime;
+		this.channelStartMilliseconds=channelStartMilliseconds;
+		this.channelStopMilliseconds=channelStopMilliseconds;
 	}
 	
 	private void initChart()
@@ -358,7 +362,7 @@ public class HashSetGroup
 	private void addToDatabase(int parent, int channel, String channelStartTime, String channelStopTime, String scStartTime, String scStopTime, long largestBinFreq, long probabilityRatio)
 	{
 		Database database=new Database("broadcast_monitoring", "root", "jason");
-		database.initInsertStatement("INSERT INTO `search_result` (parent, channel, `channel_start_time`, `channel_stop_time`, `sc_start_time`, `sc_stop_time`, `largest_bin_freq`, `probability_ratio`) VALUES (?,?,?,?,?,?,?,?)");
+		database.initInsertStatement("INSERT INTO `search_result` (parent, channel, `channel_start_time`, `channel_stop_time`, `sc_start_time`, `sc_stop_time`, `largest_bin_freq`, `probability_ratio`, `channel_start_milliseconds`, `channel_stop_milliseconds`) VALUES (?,?,?,?,?,?,?,?,?,?)");
 		database.addColumnValue(parent);
 		database.addColumnValue(channel);
 		database.addColumnValue(channelStartTime);
@@ -367,6 +371,8 @@ public class HashSetGroup
 		database.addColumnValue(scStopTime);
 		database.addColumnValue(largestBinFreq);
 		database.addColumnValue(probabilityRatio);
+		database.addColumnValue(channelStartMilliseconds);
+		database.addColumnValue(channelStopMilliseconds);
 		database.executeInsert();
 		
 		database.close();
