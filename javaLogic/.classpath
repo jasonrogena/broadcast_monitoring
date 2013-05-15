@@ -40,5 +40,14 @@
 	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/AudioServers/org-jaudiolibs-audioservers.jar"/>
 	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/AudioServers/org-jaudiolibs-audioservers-javasound.jar"/>
 	<classpathentry kind="lib" path="/usr/lib/jvm/java-7-oracle/jre/lib/jfxrt.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/itext-5.4.1/itextpdf-5.4.1.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/itext-5.4.1/itextpdf-5.4.1-javadoc.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/itext-5.4.1/itextpdf-5.4.1-sources.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/itext-5.4.1/itext-pdfa-5.4.1.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/itext-5.4.1/itext-pdfa-5.4.1-javadoc.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/itext-5.4.1/itext-pdfa-5.4.1-sources.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/itext-5.4.1/itext-xtra-5.4.1.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/itext-5.4.1/itext-xtra-5.4.1-javadoc.jar"/>
+	<classpathentry kind="lib" path="/home/jason/public_html/broadcastmonitoring/javaLogic/libraries/itext-5.4.1/itext-xtra-5.4.1-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

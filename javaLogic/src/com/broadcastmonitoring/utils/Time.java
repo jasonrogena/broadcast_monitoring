@@ -13,5 +13,13 @@ public class Time
 		sdf.setTimeZone(TimeZone.getTimeZone(timezone));
 		return sdf.format(date)+" ("+timezone+")";
 	}
+	
+	public static String getTimeFileName(String timezone)
+	{
+		Date date=new Date();
+		SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
+		sdf.setTimeZone(TimeZone.getTimeZone(timezone));
+		return sdf.format(date)+"("+timezone+")";
+	}
 
 }

@@ -26,10 +26,10 @@
                 <Button fx:id="historyDisplayButton" layoutX="467.0" layoutY="46.0" mnemonicParsing="false" prefHeight="30.0" text="Display" />
                 <TableView fx:id="searchHistoryTable" layoutX="28.0" layoutY="87.0" prefHeight="300.0" prefWidth="505.0">
                   <columns>
-                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="134.0" text="Station Time - A" fx:id="startTimeTC" />
-                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="133.0" text="Station Time - B" fx:id="stopTimeTC" />
-                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="117.0" text="Largest Bin Freq" fx:id="highestBinFreqTC" />
-                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="119.0" text="Probability Ratio" fx:id="probabilityRatioTC" />
+                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="197.0" text="Station Time - A" fx:id="startTimeTC" />
+                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="199.0" text="Station Time - B" fx:id="stopTimeTC" />
+                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="54.0" text="Largest Bin Freq" fx:id="highestBinFreqTC" />
+                    <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="55.0" text="Probability Ratio" fx:id="probabilityRatioTC" />
                   </columns>
                 </TableView>
                 <Label layoutX="86.0" layoutY="13.0" text="History">

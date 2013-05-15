@@ -3,6 +3,7 @@ package com.broadcastmonitoring.searching;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInput;
@@ -21,6 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Phaser;
 
 import javafx.application.Application;
 import javafx.collections.FXCollections;
@@ -62,7 +64,19 @@ import com.broadcastmonitoring.database.Database;
 import com.broadcastmonitoring.indexing.Hash;
 import com.broadcastmonitoring.indexing.Streamer;
 import com.broadcastmonitoring.utils.Log;
+import com.broadcastmonitoring.utils.StreamGobbler;
 import com.broadcastmonitoring.utils.Time;
+import com.itextpdf.text.Anchor;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Chapter;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 
 public class SearchingServer extends Application implements Initializable
 {
@@ -94,6 +108,7 @@ public class SearchingServer extends Application implements Initializable
 	@FXML private AnchorPane searchTabAnchorPane;
 	@FXML private ComboBox<String> historyComboBox;
 	@FXML private Button historyDisplayButton;
+	@FXML private Button historyPrintButton;
 	@FXML private TextField historyThresholdTF;
 	@FXML private TableView<SearchResult> searchHistoryTable;
 	@FXML private TableColumn<SearchResult, String> startTimeTC;
@@ -271,7 +286,7 @@ public class SearchingServer extends Application implements Initializable
 			}
 		});
 		
-		MyEventHandler eventHandler=new MyEventHandler();
+		SearchingServerEventHandler eventHandler=new SearchingServerEventHandler();
 		
 		timeTC.setCellValueFactory(new PropertyValueFactory<Log, String>("time"));
 		timeTC.setEditable(false);
@@ -293,6 +308,7 @@ public class SearchingServer extends Application implements Initializable
 		
 		initHistoryComboBox();
 		historyDisplayButton.setOnAction(eventHandler);
+		historyPrintButton.setOnAction(eventHandler);
 		
 		startTimeTC.setCellValueFactory(new PropertyValueFactory<SearchResult, String>("startTime"));
 		startTimeTC.setEditable(false);
@@ -426,7 +442,7 @@ public class SearchingServer extends Application implements Initializable
 		{
 			startStopButton=(Button)timelineNode.lookup("#startStopButton");
 			startStopButton.setText("Start");
-			startStopButton.setOnAction(new MyEventHandler());
+			startStopButton.setOnAction(new SearchingServerEventHandler());
 		}
 		else
 		{
@@ -473,7 +489,7 @@ public class SearchingServer extends Application implements Initializable
 		if(searchNode!=null)
 		{
 			fileChooserButton=(Button)searchNode.lookup("#fileChooserButton");
-			fileChooserButton.setOnAction(new MyEventHandler());
+			fileChooserButton.setOnAction(new SearchingServerEventHandler());
 		}
 		else
 		{
@@ -487,7 +503,7 @@ public class SearchingServer extends Application implements Initializable
 		{
 			searchButton=(Button)searchNode.lookup("#searchButton");
 			searchButton.setDisable(false);
-			searchButton.setOnAction(new MyEventHandler());
+			searchButton.setOnAction(new SearchingServerEventHandler());
 		}
 		else
 		{
@@ -580,6 +596,218 @@ public class SearchingServer extends Application implements Initializable
 		
 	}
 
+	private class PDFPrintHandler implements Callable<String>
+	{
+		private String selectedItem;
+		private int threshold;
+		
+		public PDFPrintHandler(String selectedItem, int theshold)
+		{
+			this.selectedItem=selectedItem;
+			this.threshold=theshold;
+		}
+		
+		@Override
+		public String call() throws Exception 
+		{
+			//Database database=new Database("broadcast_monitoring", "root", "jason");
+			List<String> items = Arrays.asList(selectedItem.split(" - "));//first item should be scId then scname then channel name
+			searchResults.clear();
+			if(items.size()==3)
+			{
+				int searchableContentID=Integer.parseInt(items.get(0));
+				String channelName=items.get(2);
+				int channelNumber=getChannelNumber(channelName);
+				String scName=getSearchableContentName(searchableContentID);
+				
+				Font heading1Font=new Font(Font.FontFamily.TIMES_ROMAN,20,Font.BOLD);
+				Font heading2Font=new Font(Font.FontFamily.TIMES_ROMAN, 14,Font.BOLD);
+				Font normalFont=new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.NORMAL);
+				Font redFont = new Font(Font.FontFamily.TIMES_ROMAN, 12,Font.NORMAL, BaseColor.RED);
+				Document document=new Document();
+				String filename="/tmp/"+Time.getTimeFileName("gmt")+".pdf";
+				PdfWriter.getInstance(document, new FileOutputStream(filename));
+				document.open();
+				
+				document.addTitle("Search Results of "+scName+" on "+channelName);
+			    document.addSubject("Generated using Searching Server");
+			    document.addAuthor("Jason Rogena");
+			    document.addCreator("Searching Server");
+			    
+			    Paragraph introduction=new Paragraph();
+			    addEmptyLine(introduction, 1);
+			    introduction.add(new Paragraph("Search Results of "+scName+" on "+channelName, heading1Font));
+			    introduction.add(new Paragraph("Generated on "+Time.getTime("gmt"), normalFont));
+			    introduction.add(new Paragraph("Using a threshold value of "+String.valueOf(threshold), normalFont));
+			    addEmptyLine(introduction, 2);
+			    document.add(introduction);
+				
+				
+				ResultSet resultSet=database.runSelectQuery("SELECT * FROM `search_result` WHERE parent = "+String.valueOf(searchableContentID)+" AND channel = "+String.valueOf(channelNumber)+" AND `probability_ratio` > "+String.valueOf(threshold)+" ORDER BY id ASC");
+				List<String> probabilityRatios=new ArrayList<String>();
+				List<String> startTimes=new ArrayList<String>();
+				List<String> stopTimes=new ArrayList<String>();
+				List<Integer> ids=new ArrayList<Integer>();
+				while(resultSet.next())
+				{
+					if(probabilityRatios.size()==0)
+					{
+						probabilityRatios.add(String.valueOf(resultSet.getInt("probability_ratio")));
+						startTimes.add(resultSet.getString("channel_start_time"));
+						stopTimes.add(resultSet.getString("channel_stop_time"));
+						ids.add(resultSet.getInt("id"));
+					}
+					else
+					{
+						int diff=resultSet.getInt("id")-ids.get(ids.size()-1);
+						if(diff==1)
+						{
+							probabilityRatios.add(String.valueOf(resultSet.getInt("probability_ratio")));
+							startTimes.add(resultSet.getString("channel_start_time"));
+							stopTimes.add(resultSet.getString("channel_stop_time"));
+							ids.add(resultSet.getInt("id"));
+							
+							if(resultSet.isLast())
+							{
+								if(probabilityRatios.size()>1)
+								{
+									System.out.print("adding to pdf");
+									Paragraph newParagraph=new Paragraph();
+									newParagraph.add(new Paragraph(startTimes.get(0)+" to "+stopTimes.get(stopTimes.size()-1),heading2Font));
+									newParagraph.add(new Paragraph(scName+" was probably played between "+startTimes.get(0)+" and "+stopTimes.get(stopTimes.size()-1)+". The table below shows the actual search results", normalFont));
+									addEmptyLine(newParagraph, 1);
+									
+									PdfPTable table=new PdfPTable(3);
+									PdfPCell startTimeCell=new PdfPCell(new Phrase("Start Time"));
+									startTimeCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+									table.addCell(startTimeCell);
+									
+									PdfPCell stopTimeCell=new PdfPCell(new Phrase("Stop Time"));
+									stopTimeCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+									table.addCell(stopTimeCell);
+									
+									PdfPCell probabilityCell=new PdfPCell(new Phrase("Probability Ratio"));
+									probabilityCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+									table.addCell(probabilityCell);
+									table.setHeaderRows(1);
+									
+									for(int i=0; i<probabilityRatios.size();i++)
+									{
+										table.addCell(startTimes.get(i));
+										table.addCell(stopTimes.get(i));
+										table.addCell(probabilityRatios.get(i));
+									}
+									
+									newParagraph.add(table);
+									addEmptyLine(newParagraph, 2);
+									document.add(newParagraph);
+									
+									probabilityRatios=new ArrayList<String>();
+									startTimes=new ArrayList<String>();
+									stopTimes=new ArrayList<String>();
+									ids=new ArrayList<Integer>();
+								}
+							}
+						}
+						else
+						{
+							if(probabilityRatios.size()>1)
+							{
+								System.out.print("adding to pdf");
+								Paragraph newParagraph=new Paragraph();
+								newParagraph.add(new Paragraph(startTimes.get(0)+" to "+stopTimes.get(stopTimes.size()-1),heading2Font));
+								newParagraph.add(new Paragraph(scName+" was probably played between "+startTimes.get(0)+" and "+stopTimes.get(stopTimes.size()-1)+". The table below shows the actual search results", normalFont));
+								addEmptyLine(newParagraph, 1);
+								
+								PdfPTable table=new PdfPTable(3);
+								PdfPCell startTimeCell=new PdfPCell(new Phrase("Start Time"));
+								startTimeCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+								table.addCell(startTimeCell);
+								
+								PdfPCell stopTimeCell=new PdfPCell(new Phrase("Stop Time"));
+								stopTimeCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+								table.addCell(stopTimeCell);
+								
+								PdfPCell probabilityCell=new PdfPCell(new Phrase("Probability Ratio"));
+								probabilityCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+								table.addCell(probabilityCell);
+								table.setHeaderRows(1);
+								
+								for(int i=0; i<probabilityRatios.size();i++)
+								{
+									table.addCell(startTimes.get(i));
+									table.addCell(stopTimes.get(i));
+									table.addCell(probabilityRatios.get(i));
+								}
+								
+								newParagraph.add(table);
+								addEmptyLine(newParagraph, 2);
+								document.add(newParagraph);
+								
+								probabilityRatios=new ArrayList<String>();
+								startTimes=new ArrayList<String>();
+								stopTimes=new ArrayList<String>();
+								ids=new ArrayList<Integer>();
+							}
+							
+							probabilityRatios.add(String.valueOf(resultSet.getInt("probability_ratio")));
+							startTimes.add(resultSet.getString("channel_start_time"));
+							stopTimes.add(resultSet.getString("channel_stop_time"));
+							ids.add(resultSet.getInt("id"));
+						}
+					}
+					//searchResults.add(new SearchResult(searchableContentID, channelNumber, resultSet.getString("channel_start_time"), resultSet.getString("channel_stop_time"), resultSet.getInt("largest_bin_freq"), resultSet.getInt("probability_ratio")));
+				}
+				document.add(new Paragraph("This document was generated using the Searching Server in the Broadcast-Monitorin System. Search results displayed in this document may not be correct. The Broadcast-Monitoring System was developed by Jason Rogena",redFont));
+				document.close();
+				
+				String command="evince "+filename;
+				//TODO: not sure if the client name in mplayer should be the same name in jackaudioserver
+				final Process eviceProcess=Runtime.getRuntime().exec(command);
+				
+				StreamGobbler errorGobbler=new StreamGobbler(eviceProcess.getErrorStream(), "ERROR", true);
+				StreamGobbler outputGobbler=new StreamGobbler(eviceProcess.getInputStream(), "OUTPUT", true);
+				errorGobbler.start();
+				outputGobbler.start();
+			}
+			else
+			{
+				logs.add(new Log(Time.getTime("gmt"), "ERROR", "SearchingServer.java: There was an error while trying to resolve the Searchable Content and Channel"));
+			}
+			database.close();
+			System.out.println("closing");
+			return null;
+		}
+		private void addEmptyLine(Paragraph paragraph, int number) 
+		{
+		    for (int i = 0; i < number; i++) 
+		    {
+		      paragraph.add(new Paragraph(" "));
+		    }
+		}
+	}
+	
+	private String getSearchableContentName(int id)
+	{
+		ResultSet resultSet=database.runSelectQuery("SELECT name FROM searchable_content WHERE id = "+String.valueOf(id));
+		try
+		{
+			if(resultSet.next())
+			{
+				String name=resultSet.getString("name");
+				database.close();
+				return name;
+			}
+		} 
+		catch (SQLException e)
+		{
+			logs.add(new Log(Time.getTime("gmt"), "ERROR", "SearchingServer.java: SQLException thrown while tring to get channel name"));
+			e.printStackTrace();
+		}
+		database.close();
+		return null;
+	}
+	
 	private class SearchHistoryHandler implements Callable<String>
 	{
 		private ComboBox<String> comboBox;
@@ -756,7 +984,7 @@ public class SearchingServer extends Application implements Initializable
 		
 	}
 	
-	private class MyEventHandler implements EventHandler<ActionEvent>
+	private class SearchingServerEventHandler implements EventHandler<ActionEvent>
 	{
 
 		@Override
@@ -855,6 +1083,12 @@ public class SearchingServer extends Application implements Initializable
 				ExecutorService executorService=Executors.newFixedThreadPool(1);
 				HistoryTablehandler historyTablehandler=new HistoryTablehandler(historyComboBox.getValue(), Integer.parseInt(historyThresholdTF.getText()));
 				Future<String> future=executorService.submit(historyTablehandler);
+			}
+			else if(event.getSource()==historyPrintButton)
+			{
+				ExecutorService executorService=Executors.newFixedThreadPool(1);
+				PDFPrintHandler printHandler=new PDFPrintHandler(historyComboBox.getValue(), Integer.parseInt(historyThresholdTF.getText()));
+				Future<String> future=executorService.submit(printHandler);
 			}
 			
 		}

@@ -342,7 +342,7 @@ public class HashSetGroup
 			long b=largestFrequency*10000;
 			b=b/matches;
 			System.out.println(comparisonsDone+" comparisons done. Ratio btwn largest freq & comparisons done = "+probabilityRatio);
-			System.out.println(matches+" - total matches. Ratio btwn largest freq & total matches = "+b);
+			//System.out.println(matches+" - total matches. Ratio btwn largest freq & total matches = "+b);
 			
 			addToDatabase(this.parent, this.channel, this.channelStartTime, this.channelStopTime, this.scStartTime, this.scStopTime, largestFrequency, probabilityRatio);
 			/*try {
