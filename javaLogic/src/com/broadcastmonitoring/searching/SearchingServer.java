@@ -64,6 +64,7 @@ import com.broadcastmonitoring.database.Database;
 import com.broadcastmonitoring.indexing.Hash;
 import com.broadcastmonitoring.indexing.Streamer;
 import com.broadcastmonitoring.utils.Log;
+import com.broadcastmonitoring.utils.NotificationHandler;
 import com.broadcastmonitoring.utils.StreamGobbler;
 import com.broadcastmonitoring.utils.Time;
 import com.itextpdf.text.Anchor;
@@ -993,6 +994,18 @@ public class SearchingServer extends Application implements Initializable
 			if(event.getSource()==settingsCancelButton)
 			{
 				initSettings();
+				
+				System.out.println("testing");
+				
+				try 
+				{
+					final Process notificationProcess=Runtime.getRuntime().exec(new String[] {"notify-send", "Searching Server","Settings reverted to previous saved state"});
+				} 
+				catch (IOException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			else if(event.getSource()==settingsSaveButton)
 			{
@@ -1194,6 +1207,16 @@ public class SearchingServer extends Application implements Initializable
 			logs.add(new Log(Time.getTime("gmt"), "INFO", "Value of limitKeyPieceSize updated to "+String.valueOf(limitKeyPieceSize)));
 			
 			database.close();
+			
+			try 
+			{
+				final Process notificationProcess=Runtime.getRuntime().exec(new String[] {"notify-send", "Searching Server","Settings successfully saved to database"});
+			} 
+			catch (IOException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			return null;
 		}
 		

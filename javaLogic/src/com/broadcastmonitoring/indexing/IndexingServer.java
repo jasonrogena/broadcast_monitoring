@@ -394,6 +394,16 @@ public class IndexingServer extends Application implements Initializable
 			logs.add(new Log(Time.getTime("gmt"), "INFO", "Value of targetZoneSize updated to "+String.valueOf(targetZoneSize)));
 			
 			database.close();
+			
+			try 
+			{
+				final Process notificationProcess=Runtime.getRuntime().exec(new String[] {"notify-send", "Indexing Server","Settings successfully saved to database"});
+			} 
+			catch (IOException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			return null;
 		}
 		
@@ -425,6 +435,16 @@ public class IndexingServer extends Application implements Initializable
 					StationInsertionThread stationInsertionThread=new StationInsertionThread(stationName.trim(), stationType, stationInterfaceText.trim());
 					Future<String> future=executorService.submit(stationInsertionThread);
 					stationNameTF.clear();
+					
+					try 
+					{
+						final Process notificationProcess=Runtime.getRuntime().exec(new String[] {"notify-send", "Indexing Server","Station successfully added to database"});
+					} 
+					catch (IOException e)
+					{
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 
 					//stationTypeComboBox.setValue(null);
 					//interfaceComboBox.setValue(null);
@@ -459,6 +479,16 @@ public class IndexingServer extends Application implements Initializable
 			else if(event.getSource()==settingsCancelButton)
 			{
 				initSettings();
+				
+				try 
+				{
+					final Process notificationProcess=Runtime.getRuntime().exec(new String[] {"notify-send", "Indexing Server","Settings reverted to previous saved state"});
+				} 
+				catch (IOException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			else if(event.getSource()==startIndexingButton)
 			{
